@@ -269,7 +269,7 @@ const ConvertKitSetupPage = () => {
                     "Monthly budget?" → budget_range
                   </div>
                 </div>
-                <Link to="/admin/field-mapping/demo">
+                <Link to="/admin/surveys/edit/demo">
                   <Button variant="secondary">
                     Configure Field Mapping
                   </Button>
