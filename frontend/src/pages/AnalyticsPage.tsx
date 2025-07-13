@@ -1,37 +1,104 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Button, GlassCard, ProgressBar } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConvertKit } from '../contexts/ConvertKitContext';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import type { Survey } from '../types';
+
+interface GlobalAnalytics {
+  totalSurveys: number;
+  totalResponses: number;
+  totalViews: number;
+  averageCompletionRate: number;
+  surveyStats: Array<{
+    surveyId: string;
+    responses: number;
+    views: number;
+    completionRate: number;
+  }>;
+}
 
 const AnalyticsPage = () => {
   const { user, logout } = useAuth();
   const { showToast } = useToast();
   const { connectionStatus, customFields } = useConvertKit();
+  const [analytics, setAnalytics] = useState<GlobalAnalytics | null>(null);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [responseTimeline, setResponseTimeline] = useState<Array<{ date: string; count: number }>>([]);
+
+  useEffect(() => {
+    loadAnalytics();
+    loadSurveys();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/survey/analytics/overview');
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+        
+        // Calculate response timeline across all surveys
+        calculateGlobalTimeline();
+      }
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSurveys = () => {
+    const allSurveys: Survey[] = [];
+    const surveyKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('bluefox_survey_')
+    );
+    
+    surveyKeys.forEach(key => {
+      try {
+        const survey = JSON.parse(localStorage.getItem(key) || '');
+        allSurveys.push(survey);
+      } catch (error) {
+        console.error('Failed to load survey:', key);
+      }
+    });
+
+    setSurveys(allSurveys);
+  };
+
+  const calculateGlobalTimeline = () => {
+    // This would ideally come from the backend
+    // For now, just show a placeholder
+    const timeline = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      timeline.push({
+        date: date.toISOString().split('T')[0],
+        count: Math.floor(Math.random() * 10) // Placeholder data
+      });
+    }
+    setResponseTimeline(timeline);
+  };
 
   const handleLogout = () => {
     logout();
   };
 
-  // Mock data for demonstration
-  const mockStats = {
-    totalSurveys: 1,
-    activeSurveys: 1,
-    totalResponses: 0,
-    completionRate: 0,
-    avgCompletionTime: '0:00',
-    topPerformingSurvey: 'Demo Survey'
+  const getSurveyName = (surveyId: string) => {
+    const survey = surveys.find(s => s.id === surveyId);
+    return survey?.title || surveyId;
   };
 
-  const mockSurveyData = [
-    {
-      name: 'Demo Survey',
-      responses: 0,
-      completionRate: 0,
-      avgTime: '0:00',
-      status: 'Active'
-    }
-  ];
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="min-h-screen w-full">
@@ -70,28 +137,36 @@ const AnalyticsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-lg" style={{ width: '100%', marginBottom: '40px' }}>
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div className="h2 text-primary" style={{ marginBottom: '8px' }}>{mockStats.totalSurveys}</div>
+              <div className="h2 text-primary" style={{ marginBottom: '8px' }}>
+                {loading ? '...' : surveys.length}
+              </div>
               <div className="text-sm text-gray-600">Total Surveys</div>
             </div>
           </GlassCard>
           
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div className="h2 text-success" style={{ marginBottom: '8px' }}>{mockStats.activeSurveys}</div>
-              <div className="text-sm text-gray-600">Active Surveys</div>
+              <div className="h2 text-success" style={{ marginBottom: '8px' }}>
+                {loading ? '...' : analytics?.totalViews || 0}
+              </div>
+              <div className="text-sm text-gray-600">Total Views</div>
             </div>
           </GlassCard>
           
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div className="h2 text-gray-700" style={{ marginBottom: '8px' }}>{mockStats.totalResponses}</div>
+              <div className="h2 text-gray-700" style={{ marginBottom: '8px' }}>
+                {loading ? '...' : analytics?.totalResponses || 0}
+              </div>
               <div className="text-sm text-gray-600">Total Responses</div>
             </div>
           </GlassCard>
           
           <GlassCard>
             <div style={{ textAlign: 'center' }}>
-              <div className="h2 text-gray-700" style={{ marginBottom: '8px' }}>{mockStats.completionRate}%</div>
+              <div className="h2 text-gray-700" style={{ marginBottom: '8px' }}>
+                {loading ? '...' : `${(analytics?.averageCompletionRate || 0).toFixed(1)}%`}
+              </div>
               <div className="text-sm text-gray-600">Avg Completion Rate</div>
             </div>
           </GlassCard>
@@ -103,74 +178,123 @@ const AnalyticsPage = () => {
             <h3 className="h3" style={{ marginBottom: '20px' }}>Survey Performance</h3>
             
             <div style={{ marginBottom: '20px' }}>
-              {mockSurveyData.map((survey, index) => (
-                <div key={index} style={{ 
-                  padding: '16px', 
-                  border: '1px solid var(--gray-200)', 
-                  borderRadius: '8px',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div className="font-medium">{survey.name}</div>
-                    <div className={`text-sm ${survey.status === 'Active' ? 'text-success' : 'text-gray-500'}`}>
-                      {survey.status}
-                    </div>
-                  </div>
-                  
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span className="text-sm">Completion Rate</span>
-                      <span className="text-sm font-medium">{survey.completionRate}%</span>
-                    </div>
-                    <ProgressBar value={survey.completionRate} />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-md text-sm">
-                    <div>
-                      <span className="text-gray-600">Responses: </span>
-                      <span className="font-medium">{survey.responses}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Avg Time: </span>
-                      <span className="font-medium">{survey.avgTime}</span>
-                    </div>
-                  </div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  Loading survey data...
                 </div>
-              ))}
+              ) : analytics?.surveyStats.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-500)' }}>
+                  No survey data available yet
+                </div>
+              ) : (
+                analytics?.surveyStats
+                  .sort((a, b) => b.completionRate - a.completionRate)
+                  .slice(0, 5)
+                  .map((stat) => {
+                    const survey = surveys.find(s => s.id === stat.surveyId);
+                    return (
+                      <div key={stat.surveyId} style={{ 
+                        padding: '16px', 
+                        border: '1px solid var(--gray-200)', 
+                        borderRadius: '8px',
+                        marginBottom: '12px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div className="font-medium">{survey?.title || stat.surveyId}</div>
+                          <div className="text-sm text-success">
+                            {survey?.isActive ? 'Active' : 'Draft'}
+                          </div>
+                        </div>
+                        
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span className="text-sm">Completion Rate</span>
+                            <span className="text-sm font-medium">{stat.completionRate.toFixed(1)}%</span>
+                          </div>
+                          <ProgressBar value={stat.completionRate} />
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-md text-sm">
+                          <div>
+                            <span className="text-gray-600">Views: </span>
+                            <span className="font-medium">{stat.views}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Responses: </span>
+                            <span className="font-medium">{stat.responses}</span>
+                          </div>
+                          <div>
+                            <Link to={`/admin/surveys/${stat.surveyId}/analytics`}>
+                              <span className="text-primary cursor-pointer hover:underline">View →</span>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
             </div>
             
-            <Button variant="secondary" onClick={() => showToast('Detailed analytics coming soon!', 'info')}>
-              View Detailed Analytics
-            </Button>
+            <Link to="/admin/surveys">
+              <Button variant="secondary">Manage Surveys</Button>
+            </Link>
           </GlassCard>
 
-          {/* Response Insights */}
+          {/* Response Timeline */}
           <GlassCard>
-            <h3 className="h3" style={{ marginBottom: '20px' }}>Response Insights</h3>
+            <h3 className="h3" style={{ marginBottom: '20px' }}>Response Timeline</h3>
             
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div className="h4 text-gray-500" style={{ marginBottom: '12px' }}>📊</div>
-                <div className="text-lg text-gray-600" style={{ marginBottom: '8px' }}>No Responses Yet</div>
-                <div className="text-sm text-gray-500">
-                  Start collecting survey responses to see insights here
+              {analytics?.totalResponses === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                  <div className="h4 text-gray-500" style={{ marginBottom: '12px' }}>📊</div>
+                  <div className="text-lg text-gray-600" style={{ marginBottom: '8px' }}>No Responses Yet</div>
+                  <div className="text-sm text-gray-500">
+                    Start collecting survey responses to see insights here
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={responseTimeline}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fill: 'var(--gray-600)', fontSize: 12 }}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis tick={{ fill: 'var(--gray-600)', fontSize: 12 }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                        border: '1px solid var(--gray-200)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="var(--primary)" 
+                      strokeWidth={2}
+                      dot={{ fill: 'var(--primary)', r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
             
             <div className="grid gap-md">
-              <Link to="/survey/demo">
-                <Button variant="primary" style={{ width: '100%' }}>
-                  Test Demo Survey
+              {surveys.length > 0 && (
+                <Link to={`/survey/${surveys[0].slug || surveys[0].id}`}>
+                  <Button variant="primary" style={{ width: '100%' }}>
+                    Test a Survey
+                  </Button>
+                </Link>
+              )}
+              <Link to="/admin/surveys">
+                <Button variant="secondary" style={{ width: '100%' }}>
+                  Create New Survey
                 </Button>
               </Link>
-              <Button 
-                variant="secondary" 
-                onClick={() => showToast('Share survey functionality coming soon!', 'info')}
-                style={{ width: '100%' }}
-              >
-                Share Survey Link
-              </Button>
             </div>
           </GlassCard>
 
@@ -201,10 +325,12 @@ const AnalyticsPage = () => {
               
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span className="status-indicator disconnected"></span>
+                  <span className={`status-indicator ${analytics && analytics.totalResponses > 0 ? 'connected' : 'disconnected'}`}></span>
                   <span className="font-medium">Subscriber Updates</span>
                 </div>
-                <div className="text-sm opacity-80">0 subscribers updated</div>
+                <div className="text-sm opacity-80">
+                  {analytics?.totalResponses || 0} responses processed
+                </div>
               </div>
             </div>
             

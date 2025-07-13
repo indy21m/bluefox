@@ -190,9 +190,11 @@ const SurveyBuilderPage = () => {
                     Edit
                   </Button>
                 </Link>
-                <Button variant="secondary" size="sm" onClick={() => showToast('Analytics coming soon!', 'info')}>
-                  Analytics
-                </Button>
+                <Link to={`/admin/surveys/${survey.id}/analytics`}>
+                  <Button variant="secondary" size="sm">
+                    Analytics
+                  </Button>
+                </Link>
               </div>
             </GlassCard>
           ))}

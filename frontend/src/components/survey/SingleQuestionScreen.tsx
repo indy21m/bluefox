@@ -218,35 +218,95 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
             )}
 
             {question.type === 'scale' && (
-              <div>
-                <div className="flex justify-between text-sm text-gray-600 mb-4">
-                  <span>{question.minValue || 1}</span>
-                  <span>{question.maxValue || 10}</span>
+              <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto', padding: '20px 0' }}>
+                {/* Value display */}
+                <div style={{ 
+                  textAlign: 'center',
+                  fontSize: '56px',
+                  fontWeight: '700',
+                  color: 'var(--primary)',
+                  marginBottom: '40px'
+                }}>
+                  {selectedAnswer || question.minValue || 1}
                 </div>
-                <div className="grid gap-sm" style={{ gridTemplateColumns: `repeat(${(question.maxValue || 10) - (question.minValue || 1) + 1}, 1fr)` }}>
-                  {Array.from(
-                    { length: (question.maxValue || 10) - (question.minValue || 1) + 1 },
-                    (_, i) => (question.minValue || 1) + i
-                  ).map((value) => (
-                    <button
-                      key={value}
-                      className={`glass-card ${isAnswered && selectedAnswer === value ? 'glass-card-dark' : ''}`}
-                      style={{
-                        padding: '20px 10px',
-                        textAlign: 'center',
-                        border: 'none',
-                        cursor: isAnswered ? 'default' : 'pointer',
-                        transition: 'all 0.3s ease',
-                        opacity: isAnswered ? 0.7 : 1,
-                        transform: isAnswered && selectedAnswer === value ? 'scale(1.1)' : 'scale(1)'
-                      }}
-                      onClick={() => handleAnswer(value)}
-                      disabled={isAnswered}
+                
+                {/* Slider container */}
+                <div style={{ position: 'relative', padding: '20px 0' }}>
+                  {/* Track */}
+                  <div style={{ 
+                    position: 'absolute',
+                    top: '50%',
+                    left: 0,
+                    right: 0,
+                    height: '12px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    borderRadius: '6px',
+                    transform: 'translateY(-50%)',
+                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)'
+                  }}>
+                    {/* Track fill */}
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      height: '100%',
+                      width: `${((Number(selectedAnswer) || question.minValue || 1) - (question.minValue || 1)) / ((question.maxValue || 10) - (question.minValue || 1)) * 100}%`,
+                      backgroundColor: 'var(--primary)',
+                      borderRadius: '6px',
+                      transition: 'width 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(99, 102, 241, 0.3)'
+                    }} />
+                  </div>
+                  
+                  {/* Actual range input */}
+                  <input
+                    type="range"
+                    min={question.minValue || 1}
+                    max={question.maxValue || 10}
+                    value={selectedAnswer || question.minValue || 1}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setSelectedAnswer(value);
+                    }}
+                    onMouseUp={() => {
+                      if (!isAnswered && selectedAnswer) {
+                        handleAnswer(selectedAnswer);
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      if (!isAnswered && selectedAnswer) {
+                        handleAnswer(selectedAnswer);
+                      }
+                    }}
+                    disabled={isAnswered}
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '40px',
+                      background: 'transparent',
+                      outline: 'none',
+                      cursor: isAnswered ? 'default' : 'pointer',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      appearance: 'none',
+                      zIndex: 10
+                    }}
+                    className="scale-slider"
+                  />
+                </div>
+                
+                {/* Continue button for first interaction */}
+                {!isAnswered && selectedAnswer === (question.minValue || 1) && (
+                  <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                    <Button
+                      variant="primary"
+                      onClick={() => handleAnswer(selectedAnswer)}
+                      style={{ minWidth: '200px' }}
                     >
-                      <span className="font-bold text-lg">{value}</span>
-                    </button>
-                  ))}
-                </div>
+                      Continue with {selectedAnswer}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -27,7 +27,13 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
           {showPercentage && <span>{Math.round(percentage)}%</span>}
         </div>
       )}
-      <div className={large ? 'progress-bar-large' : 'progress-bar'}>
+      <div 
+        className={large ? 'progress-bar-large' : 'progress-bar'}
+        style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.3)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}
+      >
         <div 
           className="progress-fill" 
           style={{ width: `${percentage}%` }}

@@ -58,6 +58,16 @@ const SurveyPage = () => {
     }
   }, [surveyId]);
 
+  useEffect(() => {
+    // Track survey view when survey is loaded
+    if (survey && survey.id) {
+      fetch(`http://localhost:3001/api/survey/${survey.id}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(err => console.error('Failed to track view:', err));
+    }
+  }, [survey]);
+
   const handleSurveyComplete = async (response: SurveyResponse) => {
     console.log('Survey completed:', response);
     
@@ -84,6 +94,11 @@ const SurveyPage = () => {
     });
     
     try {
+      // Calculate completion time in seconds
+      const completionTimeSeconds = response.completedAt && response.startedAt
+        ? Math.floor((new Date(response.completedAt).getTime() - new Date(response.startedAt).getTime()) / 1000)
+        : undefined;
+
       // Send response to backend
       const apiResponse = await fetch('http://localhost:3001/api/survey/responses', {
         method: 'POST',
@@ -96,7 +111,8 @@ const SurveyPage = () => {
           answers: response.answers,
           fieldMappings,
           optionMappings,
-          apiKey
+          apiKey,
+          completionTimeSeconds
         }),
       });
       

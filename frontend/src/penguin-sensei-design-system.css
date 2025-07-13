@@ -1041,3 +1041,54 @@ Input[size="sm"],
         border: 1px solid var(--gray-300) !important;
     }
 }
+
+/* Custom slider styling for scale questions */
+.scale-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.scale-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.scale-slider::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+.scale-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.scale-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+.scale-slider::-moz-range-thumb:active {
+  transform: scale(0.95);
+}
+
+.scale-slider:disabled::-webkit-slider-thumb,
+.scale-slider:disabled::-moz-range-thumb {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.scale-slider:disabled::-webkit-slider-thumb:hover,
+.scale-slider:disabled::-moz-range-thumb:hover {
+  transform: scale(1);
+}

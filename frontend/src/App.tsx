@@ -8,6 +8,7 @@ import SurveyBuilderPage from './pages/SurveyBuilderPage';
 import ConvertKitSetupPage from './pages/ConvertKitSetupPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SurveyEditorPage from './pages/SurveyEditorPage';
+import SurveyAnalyticsPage from './pages/SurveyAnalyticsPage';
 
 function App() {
   return (
@@ -55,6 +56,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SurveyEditorPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/surveys/:surveyId/analytics" 
+            element={
+              <ProtectedRoute>
+                <SurveyAnalyticsPage />
               </ProtectedRoute>
             } 
           />
