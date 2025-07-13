@@ -69,7 +69,6 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
           <div style={{ marginBottom: '30px' }}>
             <ProgressBar 
               value={progress} 
-              label={`Question ${currentQuestionIndex + 1} of ${totalQuestions}`}
               large 
             />
           </div>

@@ -141,9 +141,9 @@ const ConvertKitSetupPage = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg" style={{ width: '100%' }}>
+        <div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
           <GlassCard>
-            <h3 className="h3" style={{ marginBottom: '16px' }}>API Configuration</h3>
+            <h3 className="h3" style={{ marginBottom: '16px' }}>ConvertKit Configuration</h3>
             
             <div style={{ marginBottom: '20px' }}>
               <label className="form-label">ConvertKit API Key</label>
@@ -174,7 +174,7 @@ const ConvertKitSetupPage = () => {
               </div>
             </div>
 
-            <div className="flex gap-md" style={{ flexWrap: 'wrap' }}>
+            <div className="flex gap-md" style={{ flexWrap: 'wrap', marginBottom: '30px' }}>
               <Button 
                 variant="primary" 
                 onClick={handleTestConnection}
@@ -191,61 +191,27 @@ const ConvertKitSetupPage = () => {
                 Save Settings
               </Button>
             </div>
-          </GlassCard>
 
-          <GlassCard>
-            <h3 className="h3" style={{ marginBottom: '16px' }}>Connection Status</h3>
-            
-            {connectionStatus === 'connected' ? (
-              <div>
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>API Status:</span>
-                    <span className="font-bold text-success">✅ Connected</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span>Custom Fields:</span>
-                    <span className="font-bold">{customFields.length}</span>
-                  </div>
-                </div>
-                
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 className="font-semibold" style={{ marginBottom: '8px' }}>Available Custom Fields:</h4>
-                  <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
-                    {customFields.length > 0 ? (
-                      customFields.map((field: any) => (
-                        <div key={field.id} style={{ 
-                          padding: '8px', 
-                          borderBottom: '1px solid var(--gray-200)', 
-                          fontSize: '14px' 
-                        }}>
-                          <div className="font-medium">{field.label || field.name}</div>
-                          <div className="text-gray-600 text-xs">
-                            Key: {field.key} • ID: {field.id}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-600">No custom fields found</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p style={{ marginBottom: '20px' }}>
-                  Connect your ConvertKit account to start segmenting subscribers based on survey responses.
+            {connectionStatus !== 'connected' && (
+              <div style={{ 
+                padding: '20px', 
+                backgroundColor: 'var(--gray-50)', 
+                borderRadius: '8px',
+                border: '1px solid var(--gray-200)' 
+              }}>
+                <p className="font-medium" style={{ marginBottom: '16px' }}>
+                  Connect your ConvertKit account to enable survey response segmentation
                 </p>
                 <div className="grid gap-sm">
-                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '8px' }}>
+                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '6px', backgroundColor: 'white' }}>
                     <div className="font-medium">✓ Automatic subscriber lookup</div>
                     <div className="text-sm text-gray-600">Find subscribers by email address</div>
                   </div>
-                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '8px' }}>
+                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '6px', backgroundColor: 'white' }}>
                     <div className="font-medium">✓ Custom field updates</div>
                     <div className="text-sm text-gray-600">Map survey answers to ConvertKit fields</div>
                   </div>
-                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '8px' }}>
+                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '6px', backgroundColor: 'white' }}>
                     <div className="font-medium">✓ Real-time segmentation</div>
                     <div className="text-sm text-gray-600">Instant subscriber categorization</div>
                   </div>
@@ -253,30 +219,6 @@ const ConvertKitSetupPage = () => {
               </div>
             )}
           </GlassCard>
-
-          {connectionStatus === 'connected' && (
-            <GlassCard dark style={{ gridColumn: '1 / -1' }}>
-              <h3 className="h3" style={{ marginBottom: '16px' }}>Field Mapping</h3>
-              <p style={{ marginBottom: '20px' }}>
-                Configure how survey answers map to ConvertKit custom fields.
-              </p>
-              <div className="grid gap-md">
-                <div style={{ padding: '16px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px' }}>
-                  <div className="font-medium" style={{ marginBottom: '8px' }}>Survey Question → ConvertKit Field</div>
-                  <div className="text-sm opacity-80">
-                    "What's your role?" → role_field<br/>
-                    "Company size?" → company_size<br/>
-                    "Monthly budget?" → budget_range
-                  </div>
-                </div>
-                <Link to="/admin/surveys/edit/demo">
-                  <Button variant="secondary">
-                    Configure Field Mapping
-                  </Button>
-                </Link>
-              </div>
-            </GlassCard>
-          )}
         </div>
       </main>
     </div>

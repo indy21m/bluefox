@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Survey, SurveySession } from '../../types';
 import { Button, GlassCard } from '../common';
 
@@ -14,15 +15,24 @@ const SurveyComplete: React.FC<SurveyCompleteProps> = ({
   onRestart,
   onExit
 }) => {
-  const completionTime = response.startedAt ? 
-    Math.round((new Date().getTime() - response.startedAt.getTime()) / 1000) : 0;
+  const [countdown, setCountdown] = useState(5);
 
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds} seconds`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  };
+  useEffect(() => {
+    if (survey.settings.redirectUrl) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            window.location.href = survey.settings.redirectUrl!;
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [survey.settings.redirectUrl]);
 
   const handleRedirect = () => {
     if (survey.settings.redirectUrl) {
@@ -44,63 +54,24 @@ const SurveyComplete: React.FC<SurveyCompleteProps> = ({
             </h2>
             
             <div style={{ marginBottom: '30px' }}>
-              <p className="text-lg" style={{ marginBottom: '10px' }}>
-                {survey.settings.successMessage || 'Thank you for completing our survey!'}
+              <p className="text-lg">
+                Thank you! Your responses help us understand our audience better.
               </p>
-              <p className="text-sm text-gray-600">
-                Completion time: {formatTime(completionTime)}
-              </p>
+              {survey.settings.redirectUrl && (
+                <p className="text-sm text-gray-600" style={{ marginTop: '20px' }}>
+                  Redirecting in {countdown} seconds...
+                </p>
+              )}
             </div>
 
             <div style={{ 
-              backgroundColor: 'var(--gray-50)', 
-              borderRadius: 'var(--radius-lg)', 
-              padding: '20px',
-              marginBottom: '30px'
+              marginTop: '30px', 
+              padding: '15px', 
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', 
+              borderRadius: 'var(--radius-lg)' 
             }}>
-              <h4 style={{ marginBottom: '15px', color: 'var(--gray-700)' }}>
-                Your Responses
-              </h4>
-              <div style={{ textAlign: 'left' }}>
-                {response.answers.map((answer, index) => {
-                  const question = survey.questions.find(q => q.id === answer.questionId);
-                  return (
-                    <div key={answer.questionId} style={{ marginBottom: '10px' }}>
-                      <div className="text-sm font-medium text-gray-600">
-                        {index + 1}. {question?.title || 'Unknown Question'}
-                      </div>
-                      <div className="text-base font-medium">
-                        {answer.value.toString()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex gap-md justify-center" style={{ flexWrap: 'wrap' }}>
-              {survey.settings.redirectUrl && (
-                <Button variant="primary" onClick={handleRedirect}>
-                  Continue to Website
-                </Button>
-              )}
-              
-              {onRestart && (
-                <Button variant="secondary" onClick={onRestart}>
-                  Take Survey Again
-                </Button>
-              )}
-              
-              {onExit && (
-                <Button variant="secondary" onClick={onExit}>
-                  Return to Home
-                </Button>
-              )}
-            </div>
-
-            <div style={{ marginTop: '30px', padding: '15px', backgroundColor: 'var(--primary-gradient)', borderRadius: 'var(--radius-lg)' }}>
-              <p className="text-white text-sm">
-                🦊 Powered by <strong>BlueFox</strong> - Intelligent Survey Platform
+              <p style={{ color: '#ffffff', fontSize: '14px', margin: 0, textAlign: 'center' }}>
+                🦊 Powered by <strong style={{ color: '#ffffff' }}>BlueFox</strong> - Intelligent Survey Platform
               </p>
             </div>
           </div>

@@ -18,13 +18,33 @@ const SurveyEditorPage = () => {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'kit-sync' | 'logic'>('overview');
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
+  const [showLogicBuilder, setShowLogicBuilder] = useState(false);
 
   useEffect(() => {
-    // In a real app, load survey from API
     if (surveyId === 'demo') {
-      setSurvey(demoSurvey);
-      if (demoSurvey.questions.length > 0) {
-        setSelectedQuestion(demoSurvey.questions[0]);
+      // Try to load saved survey from localStorage first
+      const savedSurvey = localStorage.getItem(`bluefox_survey_${surveyId}`);
+      if (savedSurvey) {
+        try {
+          const parsedSurvey = JSON.parse(savedSurvey);
+          setSurvey(parsedSurvey);
+          if (parsedSurvey.questions.length > 0) {
+            setSelectedQuestion(parsedSurvey.questions[0]);
+          }
+        } catch (error) {
+          // If parsing fails, use demo survey
+          setSurvey(demoSurvey);
+          if (demoSurvey.questions.length > 0) {
+            setSelectedQuestion(demoSurvey.questions[0]);
+          }
+        }
+      } else {
+        // No saved survey, use demo survey
+        setSurvey(demoSurvey);
+        if (demoSurvey.questions.length > 0) {
+          setSelectedQuestion(demoSurvey.questions[0]);
+        }
       }
     }
   }, [surveyId]);
@@ -73,14 +93,56 @@ const SurveyEditorPage = () => {
   };
 
   const handleDeleteQuestion = (questionId: string) => {
-    if (confirm('Are you sure you want to delete this question?')) {
-      const updatedQuestions = survey.questions.filter(q => q.id !== questionId);
+    setQuestionToDelete(questionId);
+  };
+
+  const confirmDeleteQuestion = () => {
+    if (questionToDelete) {
+      const updatedQuestions = survey.questions.filter(q => q.id !== questionToDelete);
       setSurvey({ ...survey, questions: updatedQuestions });
       
-      if (selectedQuestion?.id === questionId) {
+      if (selectedQuestion?.id === questionToDelete) {
         setSelectedQuestion(updatedQuestions[0] || null);
       }
+      
+      setQuestionToDelete(null);
+      showToast('Question deleted successfully', 'success');
     }
+  };
+
+  const cancelDeleteQuestion = () => {
+    setQuestionToDelete(null);
+  };
+
+  const handleAddLogicRule = () => {
+    if (!selectedQuestion) return;
+    
+    const newLogic: ConditionalLogic = {
+      condition: 'equals',
+      value: '',
+      nextQuestionId: null
+    };
+    
+    const updatedLogic = [...(selectedQuestion.conditionalLogic || []), newLogic];
+    handleQuestionUpdate(selectedQuestion.id, { conditionalLogic: updatedLogic });
+  };
+
+  const handleUpdateLogicRule = (index: number, updates: Partial<ConditionalLogic>) => {
+    if (!selectedQuestion || !selectedQuestion.conditionalLogic) return;
+    
+    const updatedLogic = selectedQuestion.conditionalLogic.map((logic, i) => 
+      i === index ? { ...logic, ...updates } : logic
+    );
+    
+    handleQuestionUpdate(selectedQuestion.id, { conditionalLogic: updatedLogic });
+  };
+
+  const handleDeleteLogicRule = (index: number) => {
+    if (!selectedQuestion || !selectedQuestion.conditionalLogic) return;
+    
+    const updatedLogic = selectedQuestion.conditionalLogic.filter((_, i) => i !== index);
+    handleQuestionUpdate(selectedQuestion.id, { conditionalLogic: updatedLogic });
+    showToast('Logic rule deleted', 'success');
   };
 
   const handleReorderQuestion = (questionId: string, direction: 'up' | 'down') => {
@@ -105,7 +167,8 @@ const SurveyEditorPage = () => {
   const handleSaveSurvey = async () => {
     setIsSaving(true);
     try {
-      // In a real app, save to API
+      // Save to localStorage for now (until we have backend CRUD)
+      localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(survey));
       await new Promise(resolve => setTimeout(resolve, 1000));
       showToast('Survey saved successfully!', 'success');
     } catch (error) {
@@ -145,6 +208,11 @@ const SurveyEditorPage = () => {
             <div className="flex gap-md">
               <Link to="/admin/surveys">
                 <Button variant="secondary">← Back to Surveys</Button>
+              </Link>
+              <Link to={`/survey/${surveyId}`} target="_blank">
+                <Button variant="secondary">
+                  🔍 Test Survey
+                </Button>
               </Link>
               <Button 
                 variant="primary" 
@@ -248,29 +316,21 @@ const SurveyEditorPage = () => {
           <div style={{ gridColumn: 'span 2' }}>
             {selectedQuestion ? (
               <GlassCard>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 className="h3">Q{selectedQuestion.order}: {selectedQuestion.title || 'Untitled Question'}</h3>
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    onClick={() => handleDeleteQuestion(selectedQuestion.id)}
-                    style={{ color: 'var(--error)' }}
-                  >
-                    Delete Question
-                  </Button>
-                </div>
 
                 {/* Tab Navigation */}
                 <div style={{ 
                   display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   borderBottom: '1px solid var(--gray-200)', 
                   marginBottom: '24px',
                   gap: '0'
                 }}>
+                  <div style={{ display: 'flex', gap: '0' }}>
                   {[
-                    { id: 'overview', label: 'Overview' },
-                    { id: 'kit-sync', label: 'Sync with Kit' },
-                    { id: 'logic', label: 'Conditional Logic' }
+                    { id: 'overview', label: '📝 Overview' },
+                    { id: 'kit-sync', label: '🔗 Sync with Kit' },
+                    { id: 'logic', label: '🔀 Conditional Logic' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -300,6 +360,21 @@ const SurveyEditorPage = () => {
                       )}
                     </button>
                   ))}
+                  </div>
+                  
+                  {/* Delete Question Button */}
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => handleDeleteQuestion(selectedQuestion.id)}
+                    style={{ 
+                      color: 'var(--error)', 
+                      border: '1px solid var(--error)',
+                      backgroundColor: 'transparent'
+                    }}
+                  >
+                    🗑️ Delete Question
+                  </Button>
                 </div>
 
                 {/* Tab Content */}
@@ -591,7 +666,7 @@ const SurveyEditorPage = () => {
                       <Button 
                         variant="secondary" 
                         size="sm"
-                        onClick={() => showToast('Conditional logic builder coming soon!', 'info')}
+                        onClick={handleAddLogicRule}
                       >
                         + Add Logic Rule
                       </Button>
@@ -606,12 +681,96 @@ const SurveyEditorPage = () => {
                             borderRadius: '8px',
                             backgroundColor: 'var(--gray-50)'
                           }}>
-                            <div className="text-sm">
-                              <strong>If answer {logic.condition} "{logic.value}"</strong>
-                              <br />
-                              <span className="text-gray-600">
-                                → {logic.nextQuestionId ? `Go to question ${logic.nextQuestionId}` : 'End survey'}
-                              </span>
+                            <div className="grid gap-md">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <span className="text-sm font-medium">If answer</span>
+                                
+                                <select
+                                  value={logic.condition}
+                                  onChange={(e) => handleUpdateLogicRule(index, { condition: e.target.value as ConditionalLogic['condition'] })}
+                                  style={{
+                                    padding: '4px 8px',
+                                    border: '1px solid var(--gray-300)',
+                                    borderRadius: '4px',
+                                    fontSize: '14px'
+                                  }}
+                                >
+                                  <option value="equals">equals</option>
+                                  <option value="not_equals">does not equal</option>
+                                  <option value="contains">contains</option>
+                                  <option value="greater_than">is greater than</option>
+                                  <option value="less_than">is less than</option>
+                                </select>
+
+                                {selectedQuestion.type === 'multiple_choice' ? (
+                                  <select
+                                    value={logic.value}
+                                    onChange={(e) => handleUpdateLogicRule(index, { value: e.target.value })}
+                                    style={{
+                                      padding: '4px 8px',
+                                      border: '1px solid var(--gray-300)',
+                                      borderRadius: '4px',
+                                      fontSize: '14px',
+                                      minWidth: '120px'
+                                    }}
+                                  >
+                                    <option value="">Select option...</option>
+                                    {selectedQuestion.options?.map(option => (
+                                      <option key={option.id} value={option.value}>
+                                        {option.text}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <Input
+                                    value={logic.value}
+                                    onChange={(e) => handleUpdateLogicRule(index, { value: e.target.value })}
+                                    placeholder="Enter value..."
+                                    size="sm"
+                                    style={{ width: '120px' }}
+                                  />
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <span className="text-sm font-medium">Then go to</span>
+                                
+                                <select
+                                  value={logic.nextQuestionId || ''}
+                                  onChange={(e) => handleUpdateLogicRule(index, { nextQuestionId: e.target.value || null })}
+                                  style={{
+                                    padding: '4px 8px',
+                                    border: '1px solid var(--gray-300)',
+                                    borderRadius: '4px',
+                                    fontSize: '14px',
+                                    minWidth: '200px'
+                                  }}
+                                >
+                                  <option value="">End survey</option>
+                                  {survey.questions
+                                    .filter(q => q.id !== selectedQuestion.id)
+                                    .sort((a, b) => a.order - b.order)
+                                    .map((question, qIndex) => (
+                                      <option key={question.id} value={question.id}>
+                                        Q{qIndex + 1}: {question.title}
+                                      </option>
+                                    ))}
+                                </select>
+
+                                <button
+                                  onClick={() => handleDeleteLogicRule(index)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--error)',
+                                    cursor: 'pointer',
+                                    padding: '4px 8px',
+                                    fontSize: '14px'
+                                  }}
+                                >
+                                  ✕ Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -633,6 +792,7 @@ const SurveyEditorPage = () => {
                     )}
                   </div>
                 )}
+
               </GlassCard>
             ) : (
               <GlassCard>
@@ -659,24 +819,7 @@ const SurveyEditorPage = () => {
           <GlassCard dark>
             <h3 className="h3" style={{ marginBottom: '20px' }}>Survey Settings</h3>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <input
-                  type="checkbox"
-                  id="autoAdvance"
-                  checked={survey.settings.autoAdvanceDelay > 0}
-                  onChange={(e) => setSurvey({
-                    ...survey,
-                    settings: { ...survey.settings, autoAdvanceDelay: e.target.checked ? 750 : 0 }
-                  })}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <label htmlFor="autoAdvance">
-                  <div className="font-medium">Auto-advance</div>
-                  <div className="text-sm opacity-80">Automatically move to next question</div>
-                </label>
-              </div>
-              
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg" style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <input
                   type="checkbox"
@@ -690,7 +833,7 @@ const SurveyEditorPage = () => {
                 />
                 <label htmlFor="showProgress">
                   <div className="font-medium">Show progress bar</div>
-                  <div className="text-sm opacity-80">Display completion progress</div>
+                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Display completion progress</div>
                 </label>
               </div>
               
@@ -707,13 +850,106 @@ const SurveyEditorPage = () => {
                 />
                 <label htmlFor="requireEmail">
                   <div className="font-medium">Require email</div>
-                  <div className="text-sm opacity-80">Capture email before survey</div>
+                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Capture email before survey</div>
                 </label>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <input
+                  type="checkbox"
+                  id="allowBackNavigation"
+                  checked={survey.settings.allowBackNavigation ?? true}
+                  onChange={(e) => setSurvey({
+                    ...survey,
+                    settings: { ...survey.settings, allowBackNavigation: e.target.checked }
+                  })}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <label htmlFor="allowBackNavigation">
+                  <div className="font-medium">Show back button</div>
+                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Allow users to go back to previous questions</div>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+              <div>
+                <label className="form-label">Success Message</label>
+                <Input
+                  type="text"
+                  value={survey.settings.successMessage ?? ''}
+                  onChange={(e) => setSurvey({
+                    ...survey,
+                    settings: { ...survey.settings, successMessage: e.target.value }
+                  })}
+                  placeholder="Thank you for completing our survey!"
+                />
+                <p className="text-xs" style={{ marginTop: '4px', color: 'rgba(255,255,255,0.8)' }}>
+                  Custom message shown after survey completion
+                </p>
+              </div>
+              
+              <div>
+                <label className="form-label">Redirect URL (optional)</label>
+                <Input
+                  type="url"
+                  value={survey.settings.redirectUrl ?? ''}
+                  onChange={(e) => setSurvey({
+                    ...survey,
+                    settings: { ...survey.settings, redirectUrl: e.target.value }
+                  })}
+                  placeholder="https://example.com/thank-you"
+                />
+                <p className="text-xs" style={{ marginTop: '4px', color: 'rgba(255,255,255,0.8)' }}>
+                  Automatically redirect users after 5 seconds
+                </p>
               </div>
             </div>
           </GlassCard>
         </div>
+
+        {/* Add padding at bottom */}
+        <div style={{ height: '40px' }}></div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {questionToDelete && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+          }}>
+            <h3 className="h3" style={{ marginBottom: '16px' }}>Delete Question</h3>
+            <p style={{ marginBottom: '24px', color: 'var(--gray-600)' }}>
+              Are you sure you want to delete this question? This action cannot be undone.
+            </p>
+            <div className="flex gap-md" style={{ justifyContent: 'center' }}>
+              <Button variant="secondary" onClick={cancelDeleteQuestion}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={confirmDeleteQuestion} style={{ backgroundColor: 'var(--error)' }}>
+                Delete Question
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

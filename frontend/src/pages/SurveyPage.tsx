@@ -1,11 +1,32 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { SurveyContainer } from '../components/survey';
-import type { SurveyResponse } from '../types';
+import type { SurveyResponse, Survey } from '../types';
 import { demoSurvey } from '../data/demoSurvey';
 
 const SurveyPage = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
   const navigate = useNavigate();
+  const [survey, setSurvey] = useState<Survey | null>(null);
+
+  useEffect(() => {
+    if (surveyId === 'demo') {
+      // Try to load saved survey from localStorage first
+      const savedSurvey = localStorage.getItem(`bluefox_survey_${surveyId}`);
+      if (savedSurvey) {
+        try {
+          const parsedSurvey = JSON.parse(savedSurvey);
+          setSurvey(parsedSurvey);
+        } catch (error) {
+          // If parsing fails, use demo survey
+          setSurvey(demoSurvey);
+        }
+      } else {
+        // No saved survey, use demo survey
+        setSurvey(demoSurvey);
+      }
+    }
+  }, [surveyId]);
 
   const handleSurveyComplete = (response: SurveyResponse) => {
     console.log('Survey completed:', response);
@@ -16,10 +37,6 @@ const SurveyPage = () => {
   const handleExit = () => {
     navigate('/');
   };
-
-  // For demo purposes, we'll use the demo survey for any surveyId
-  // In a real app, you'd fetch the survey data based on the surveyId
-  const survey = demoSurvey;
 
   if (!survey) {
     return (

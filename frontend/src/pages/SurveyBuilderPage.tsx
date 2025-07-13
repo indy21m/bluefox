@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Button, GlassCard } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +9,20 @@ const SurveyBuilderPage = () => {
   const { user, logout } = useAuth();
   const { showToast } = useToast();
   const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [demoQuestionCount, setDemoQuestionCount] = useState(7);
+
+  useEffect(() => {
+    // Load demo survey question count from localStorage
+    const savedSurvey = localStorage.getItem('bluefox_survey_demo');
+    if (savedSurvey) {
+      try {
+        const parsedSurvey = JSON.parse(savedSurvey);
+        setDemoQuestionCount(parsedSurvey.questions?.length || 7);
+      } catch (error) {
+        setDemoQuestionCount(7); // fallback to original count
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -67,7 +81,7 @@ const SurveyBuilderPage = () => {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span className="text-sm">Questions:</span>
-                <span className="text-sm font-bold">4</span>
+                <span className="text-sm font-bold">{demoQuestionCount}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="text-sm">Responses:</span>
