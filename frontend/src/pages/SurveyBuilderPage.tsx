@@ -83,9 +83,11 @@ const SurveyBuilderPage = () => {
                   Edit
                 </Button>
               </Link>
-              <Button variant="secondary" size="sm" onClick={() => showToast('Analytics coming soon!', 'info')}>
-                Analytics
-              </Button>
+              <Link to="/admin/field-mapping/demo">
+                <Button variant="secondary" size="sm">
+                  Field Mapping
+                </Button>
+              </Link>
             </div>
           </GlassCard>
 

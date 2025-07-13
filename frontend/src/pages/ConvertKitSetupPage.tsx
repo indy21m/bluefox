@@ -269,9 +269,11 @@ const ConvertKitSetupPage = () => {
                     "Monthly budget?" → budget_range
                   </div>
                 </div>
-                <Button variant="secondary" onClick={() => showToast('Field mapping UI coming soon!', 'info')}>
-                  Configure Field Mapping
-                </Button>
+                <Link to="/admin/field-mapping/demo">
+                  <Button variant="secondary">
+                    Configure Field Mapping
+                  </Button>
+                </Link>
               </div>
             </GlassCard>
           )}
