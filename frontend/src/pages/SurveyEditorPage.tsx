@@ -4,7 +4,8 @@ import { Header, Button, GlassCard, Input } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConvertKit } from '../contexts/ConvertKitContext';
-import type { Survey, Question, AnswerOption, ConditionalLogic } from '../types';
+import LogicBuilder from '../components/logic-builder/LogicBuilder';
+import type { Survey, Question, AnswerOption, ConditionalLogic, FlowNode, FlowEdge } from '../types';
 import { demoSurvey } from '../data/demoSurvey';
 
 const SurveyEditorPage = () => {
@@ -17,7 +18,7 @@ const SurveyEditorPage = () => {
   const [survey, setSurvey] = useState<Survey>(demoSurvey);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'kit-sync' | 'logic'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'kit-sync' | 'logic' | 'flow'>('overview');
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [showLogicBuilder, setShowLogicBuilder] = useState(false);
   const [draggedQuestion, setDraggedQuestion] = useState<string | null>(null);
@@ -131,6 +132,8 @@ const SurveyEditorPage = () => {
     if (!selectedQuestion) return;
     
     const newLogic: ConditionalLogic = {
+      id: `logic_${Date.now()}`,
+      questionId: selectedQuestion.id,
       condition: 'equals',
       value: '',
       nextQuestionId: null
@@ -258,6 +261,14 @@ const SurveyEditorPage = () => {
     }
   };
 
+  const handleSaveFlowData = (nodes: FlowNode[], edges: FlowEdge[]) => {
+    setSurvey({
+      ...survey,
+      flowData: { nodes, edges }
+    });
+    showToast('Logic flow saved!', 'success');
+  };
+
   return (
     <div className="min-h-screen w-full">
       <Header 
@@ -296,7 +307,7 @@ const SurveyEditorPage = () => {
                       display: survey.title ? 'block' : 'none'
                     }}
                     onClick={() => {
-                      const input = document.getElementById('survey-title-input');
+                      const input = document.getElementById('survey-title-input') as HTMLInputElement;
                       const display = document.getElementById('survey-title-display');
                       if (input && display) {
                         input.style.display = 'block';
@@ -344,7 +355,7 @@ const SurveyEditorPage = () => {
                       handleSaveSurvey();
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'Enter' && e.target instanceof HTMLElement) {
                         e.target.blur();
                       }
                     }}
@@ -380,7 +391,7 @@ const SurveyEditorPage = () => {
                         display: survey.description || !survey.title ? 'none' : 'block'
                       }}
                       onClick={() => {
-                        const input = document.getElementById('survey-description-input');
+                        const input = document.getElementById('survey-description-input') as HTMLInputElement;
                         const display = document.getElementById('survey-description-display');
                         if (input && display) {
                           input.style.display = 'block';
@@ -417,7 +428,7 @@ const SurveyEditorPage = () => {
                         handleSaveSurvey();
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && e.target instanceof HTMLElement) {
                           e.target.blur();
                         }
                       }}
@@ -557,11 +568,12 @@ const SurveyEditorPage = () => {
                   {[
                     { id: 'overview', label: '📝 Overview' },
                     { id: 'kit-sync', label: '🔗 Sync with Kit' },
-                    { id: 'logic', label: '🔀 Conditional Logic' }
+                    { id: 'logic', label: '🔀 Conditional Logic' },
+                    { id: 'flow', label: '🎯 Logic Flow' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as 'overview' | 'kit-sync' | 'logic')}
+                      onClick={() => setActiveTab(tab.id as 'overview' | 'kit-sync' | 'logic' | 'flow')}
                       style={{
                         padding: '8px 16px',
                         border: 'none',
@@ -1057,7 +1069,13 @@ const SurveyEditorPage = () => {
                                 ) : (
                                   <Input
                                     value={logic.value}
-                                    onChange={(e) => handleUpdateLogicRule(index, { value: e.target.value })}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const convertedValue = (selectedQuestion.type === 'number' || selectedQuestion.type === 'scale') 
+                                        ? (val === '' ? '' : Number(val))
+                                        : val;
+                                      handleUpdateLogicRule(index, { value: convertedValue });
+                                    }}
                                     placeholder="Enter value..."
                                     size="sm"
                                     style={{ width: '120px' }}
@@ -1123,6 +1141,22 @@ const SurveyEditorPage = () => {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Logic Flow Tab */}
+                {activeTab === 'flow' && (
+                  <div style={{ marginTop: '20px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <h4 className="h4" style={{ marginBottom: '8px' }}>Visual Logic Flow</h4>
+                      <p className="text-sm text-gray-600">
+                        Design your survey flow visually. Drag to connect questions and add conditional logic.
+                      </p>
+                    </div>
+                    <LogicBuilder 
+                      survey={survey} 
+                      onSave={handleSaveFlowData}
+                    />
                   </div>
                 )}
 

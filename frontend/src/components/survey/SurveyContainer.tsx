@@ -44,6 +44,14 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
   const initialAnswers: Answer[] = [];
   let startQuestionId = survey.startQuestionId || firstQuestionId;
   
+  // If we have flow data, find the start node's first connection
+  if (survey.flowData?.edges && survey.flowData.edges.length > 0) {
+    const startEdge = survey.flowData.edges.find(edge => edge.source === 'start');
+    if (startEdge && startEdge.target !== 'end') {
+      startQuestionId = startEdge.target;
+    }
+  }
+  
   // If we have an initial email and there's an email question, auto-answer it
   if (initialEmail && initialEmail.includes('@')) {
     const emailQuestion = sortedQuestions.find(q => q.type === 'email');
@@ -81,7 +89,46 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
   };
 
   const getNextQuestionId = (currentQuestion: Question, answer: Answer): string | null => {
-    // Check for conditional logic
+    // First, check if we have flow data with edges
+    if (survey.flowData?.edges && survey.flowData.edges.length > 0) {
+      // Find edges from current question
+      const outgoingEdges = survey.flowData.edges.filter(edge => edge.source === currentQuestion.id);
+      
+      if (outgoingEdges.length > 0) {
+        // Check edges with conditions first
+        for (const edge of outgoingEdges) {
+          if (edge.data?.conditions && edge.data.conditions.length > 0) {
+            const conditions = edge.data.conditions;
+            const operator = edge.data.operator || 'AND';
+            
+            let conditionsMet = false;
+            if (operator === 'AND') {
+              // All conditions must be met
+              conditionsMet = conditions.every(condition => 
+                evaluateEnhancedCondition(condition, answer)
+              );
+            } else {
+              // At least one condition must be met
+              conditionsMet = conditions.some(condition => 
+                evaluateEnhancedCondition(condition, answer)
+              );
+            }
+            
+            if (conditionsMet) {
+              return edge.target === 'end' ? null : edge.target;
+            }
+          }
+        }
+        
+        // If no conditions matched, use the default edge (one without conditions)
+        const defaultEdge = outgoingEdges.find(edge => !edge.data?.conditions || edge.data.conditions.length === 0);
+        if (defaultEdge) {
+          return defaultEdge.target === 'end' ? null : defaultEdge.target;
+        }
+      }
+    }
+    
+    // Fallback to old conditional logic
     if (currentQuestion.conditionalLogic && currentQuestion.conditionalLogic.length > 0) {
       for (const logic of currentQuestion.conditionalLogic) {
         if (evaluateCondition(logic.condition, answer.value, logic.value)) {
@@ -124,6 +171,58 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
         return Number(answerValue) > Number(targetValue);
       case 'less_than':
         return Number(answerValue) < Number(targetValue);
+      default:
+        return false;
+    }
+  };
+
+  const evaluateEnhancedCondition = (
+    condition: any, // Using any for the enhanced Condition type
+    answer: Answer
+  ): boolean => {
+    const answerValue = answer.value;
+    const conditionValue = condition.value;
+
+    switch (condition.operator) {
+      case 'equals':
+        if (typeof answerValue === 'boolean' && conditionValue !== undefined) {
+          return answerValue === (conditionValue === true || conditionValue === 'true');
+        }
+        return answerValue === conditionValue;
+        
+      case 'not_equals':
+        if (typeof answerValue === 'boolean' && conditionValue !== undefined) {
+          return answerValue !== (conditionValue === true || conditionValue === 'true');
+        }
+        return answerValue !== conditionValue;
+        
+      case 'contains':
+        return answerValue.toString().toLowerCase().includes(conditionValue.toString().toLowerCase());
+        
+      case 'greater_than':
+        return Number(answerValue) > Number(conditionValue);
+        
+      case 'less_than':
+        return Number(answerValue) < Number(conditionValue);
+        
+      case 'in':
+        if (Array.isArray(conditionValue)) {
+          return conditionValue.includes(answerValue);
+        }
+        return answerValue === conditionValue;
+        
+      case 'not_in':
+        if (Array.isArray(conditionValue)) {
+          return !conditionValue.includes(answerValue);
+        }
+        return answerValue !== conditionValue;
+        
+      case 'is_empty':
+        return !answerValue || answerValue === '';
+        
+      case 'is_not_empty':
+        return !!answerValue && answerValue !== '';
+        
       default:
         return false;
     }
@@ -179,7 +278,26 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
   };
 
   const handleBack = () => {
-    if (currentQuestionIndex > 0) {
+    // Find the path that led to current question
+    const answeredQuestions = session.answers.map(a => a.questionId);
+    const currentIndex = answeredQuestions.indexOf(session.currentQuestionId);
+    
+    if (currentIndex > 0) {
+      // Go back to the previous answered question
+      const previousQuestionId = answeredQuestions[currentIndex - 1];
+      const previousQuestionIndex = survey.questions.findIndex(q => q.id === previousQuestionId);
+      
+      // Remove the answer for the current question
+      const updatedAnswers = session.answers.filter(a => a.questionId !== session.currentQuestionId);
+      
+      setSession({
+        ...session,
+        currentQuestionId: previousQuestionId,
+        answers: updatedAnswers
+      });
+      setCurrentQuestionIndex(previousQuestionIndex);
+    } else if (currentQuestionIndex > 0) {
+      // Fallback to order-based navigation
       const sortedQuestions = [...survey.questions].sort((a, b) => a.order - b.order);
       const previousQuestion = sortedQuestions[currentQuestionIndex - 1];
       

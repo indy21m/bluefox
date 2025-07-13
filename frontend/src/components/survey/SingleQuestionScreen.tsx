@@ -263,7 +263,7 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
                     type="range"
                     min={question.minValue || 1}
                     max={question.maxValue || 10}
-                    value={selectedAnswer || question.minValue || 1}
+                    value={typeof selectedAnswer === 'number' ? selectedAnswer : (question.minValue || 1)}
                     onChange={(e) => {
                       const value = Number(e.target.value);
                       setSelectedAnswer(value);

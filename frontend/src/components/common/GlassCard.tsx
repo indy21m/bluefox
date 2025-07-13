@@ -5,13 +5,15 @@ interface GlassCardProps {
   dark?: boolean;
   className?: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 const GlassCard: React.FC<GlassCardProps> = ({
   children,
   dark = false,
   className = '',
-  onClick
+  onClick,
+  style
 }) => {
   const classes = [
     'glass-card',
@@ -20,7 +22,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={classes} onClick={onClick}>
+    <div className={classes} onClick={onClick} style={style}>
       {children}
     </div>
   );

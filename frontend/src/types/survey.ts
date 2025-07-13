@@ -18,6 +18,51 @@ export interface ConditionalLogic {
   nextQuestionId: string | null; // null means end survey
 }
 
+// Enhanced logic types for visual builder
+export interface LogicRule {
+  id: string;
+  sourceQuestionId: string;
+  conditions: Condition[];
+  operator: 'AND' | 'OR';
+  targetQuestionId: string | 'END' | 'REDIRECT';
+  redirectUrl?: string;
+}
+
+export interface Condition {
+  id: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'in' | 'not_in' | 'is_empty' | 'is_not_empty';
+  value?: any;
+  optionId?: string; // For multiple choice questions
+}
+
+// Flow node types for React Flow
+export interface FlowNode {
+  id: string;
+  type: 'question' | 'logic' | 'end' | 'start';
+  position: { x: number; y: number };
+  data: {
+    question?: Question;
+    logic?: LogicRule;
+    label?: string;
+    color?: string;
+  };
+}
+
+export interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  label?: string;
+  animated?: boolean;
+  style?: React.CSSProperties;
+  data?: {
+    conditions?: Condition[];
+    operator?: 'AND' | 'OR';
+  };
+}
+
 // Individual survey question
 export interface Question {
   id: string;
@@ -54,6 +99,11 @@ export interface Survey {
   updatedAt: Date;
   completions: number;
   settings: SurveySettings;
+  logicRules?: LogicRule[];
+  flowData?: {
+    nodes: FlowNode[];
+    edges: FlowEdge[];
+  };
 }
 
 // Survey configuration settings

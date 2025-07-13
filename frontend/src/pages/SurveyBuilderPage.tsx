@@ -88,7 +88,8 @@ const SurveyBuilderPage = () => {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        isActive: true
+        isActive: true,
+        completions: 0
       };
 
       // Save to localStorage
