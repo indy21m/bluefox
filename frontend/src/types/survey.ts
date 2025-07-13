@@ -44,6 +44,7 @@ export interface Answer {
 // Complete survey definition
 export interface Survey {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   questions: Question[];

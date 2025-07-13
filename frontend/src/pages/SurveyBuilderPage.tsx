@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Header, Button, GlassCard } from '../components/common';
+import { Link, useNavigate } from 'react-router-dom';
+import { Header, Button, GlassCard, Input } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import type { Survey, Question } from '../types';
@@ -8,29 +8,115 @@ import type { Survey, Question } from '../types';
 const SurveyBuilderPage = () => {
   const { user, logout } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [demoQuestionCount, setDemoQuestionCount] = useState(7);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newSurveyTitle, setNewSurveyTitle] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    // Load demo survey question count from localStorage
-    const savedSurvey = localStorage.getItem('bluefox_survey_demo');
-    if (savedSurvey) {
+    loadSurveys();
+  }, []);
+
+  const loadSurveys = () => {
+    const allSurveys: Survey[] = [];
+    
+    // Load demo survey
+    const savedDemoSurvey = localStorage.getItem('bluefox_survey_demo');
+    if (savedDemoSurvey) {
       try {
-        const parsedSurvey = JSON.parse(savedSurvey);
+        const parsedSurvey = JSON.parse(savedDemoSurvey);
         setDemoQuestionCount(parsedSurvey.questions?.length || 7);
+        allSurveys.push(parsedSurvey);
       } catch (error) {
-        setDemoQuestionCount(7); // fallback to original count
+        setDemoQuestionCount(7);
       }
     }
-  }, []);
+
+    // Load all other surveys from localStorage
+    const surveyKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('bluefox_survey_') && key !== 'bluefox_survey_demo'
+    );
+    
+    surveyKeys.forEach(key => {
+      try {
+        const survey = JSON.parse(localStorage.getItem(key) || '');
+        allSurveys.push(survey);
+      } catch (error) {
+        console.error('Failed to load survey:', key);
+      }
+    });
+
+    setSurveys(allSurveys);
+  };
 
   const handleLogout = () => {
     logout();
   };
 
   const handleCreateSurvey = () => {
-    // For now, show an alert that this feature is coming soon
-    showToast('Survey builder coming soon! This will open a visual drag-and-drop interface to create surveys.', 'info');
+    setShowCreateModal(true);
+  };
+
+  const handleCreateSurveySubmit = async () => {
+    if (!newSurveyTitle.trim()) {
+      showToast('Please enter a survey title', 'error');
+      return;
+    }
+
+    setIsCreating(true);
+    
+    try {
+      // Generate unique survey ID
+      const surveyId = 'survey_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      // Create new survey object
+      const newSurvey: Survey = {
+        id: surveyId,
+        title: newSurveyTitle.trim(),
+        description: '',
+        questions: [],
+        startQuestionId: '',
+        settings: {
+          showProgressBar: true,
+          requireEmailCapture: false,
+          allowBackNavigation: true,
+          autoAdvanceDelay: 750,
+          successMessage: 'Thank you for completing our survey!',
+          redirectUrl: ''
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true
+      };
+
+      // Save to localStorage
+      localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(newSurvey));
+      
+      // Show success message
+      showToast('Survey created successfully!', 'success');
+      
+      // Close modal and reset form
+      setShowCreateModal(false);
+      setNewSurveyTitle('');
+      
+      // Reload surveys
+      loadSurveys();
+      
+      // Navigate to survey editor
+      navigate(`/admin/surveys/edit/${surveyId}`);
+      
+    } catch (error) {
+      showToast('Failed to create survey', 'error');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setNewSurveyTitle('');
   };
 
   return (
@@ -53,7 +139,7 @@ const SurveyBuilderPage = () => {
       <main className="container" style={{ paddingTop: '40px', width: '100%' }}>
         <div style={{ marginBottom: '40px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h1 className="h1">Survey Management</h1>
+            <h1 className="h1" style={{ color: 'white' }}>Survey Management</h1>
             <div className="flex gap-md">
               <Link to="/admin">
                 <Button variant="secondary">← Back to Dashboard</Button>
@@ -63,45 +149,68 @@ const SurveyBuilderPage = () => {
               </Button>
             </div>
           </div>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Create, edit, and manage your survey campaigns
           </p>
         </div>
 
         <div className="grid grid-responsive gap-lg" style={{ width: '100%' }}>
-          <GlassCard>
-            <h3 className="h3" style={{ marginBottom: '16px' }}>Demo Survey</h3>
-            <p style={{ marginBottom: '20px' }}>
-              A sample survey with conditional logic that demonstrates the platform capabilities.
-            </p>
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span className="text-sm">Status:</span>
-                <span className="text-sm font-bold text-success">Active</span>
+          {/* Survey List - excluding demo */}
+          {surveys.filter(survey => survey.id !== 'demo').map((survey) => (
+            <GlassCard key={survey.id}>
+              <h3 className="h3" style={{ marginBottom: '16px' }}>
+                {survey.title}
+                {survey.id === 'demo' && <span className="text-sm font-normal text-gray-600"> (Demo)</span>}
+              </h3>
+              <p style={{ marginBottom: '20px' }}>
+                {survey.description || 'No description added yet'}
+              </p>
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-sm">Status:</span>
+                  <span className="text-sm font-bold text-success">
+                    {survey.isActive ? 'Active' : 'Draft'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-sm">Questions:</span>
+                  <span className="text-sm font-bold">{survey.questions.length}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span className="text-sm">Responses:</span>
+                  <span className="text-sm font-bold">0</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span className="text-sm">Questions:</span>
-                <span className="text-sm font-bold">{demoQuestionCount}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="text-sm">Responses:</span>
-                <span className="text-sm font-bold">0</span>
-              </div>
-            </div>
-            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-              <Link to="/survey/demo">
-                <Button variant="primary" size="sm">Preview</Button>
-              </Link>
-              <Link to="/admin/surveys/edit/demo">
-                <Button variant="secondary" size="sm">
-                  Edit
+              <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                <Link to={`/survey/${survey.slug || survey.id}`}>
+                  <Button variant="primary" size="sm">Preview</Button>
+                </Link>
+                <Link to={`/admin/surveys/edit/${survey.id}`}>
+                  <Button variant="secondary" size="sm">
+                    Edit
+                  </Button>
+                </Link>
+                <Button variant="secondary" size="sm" onClick={() => showToast('Analytics coming soon!', 'info')}>
+                  Analytics
                 </Button>
-              </Link>
-              <Button variant="secondary" size="sm" onClick={() => showToast('Analytics coming soon!', 'info')}>
-                Analytics
-              </Button>
-            </div>
-          </GlassCard>
+              </div>
+            </GlassCard>
+          ))}
+
+          {/* Show message if no surveys */}
+          {surveys.length === 0 && (
+            <GlassCard>
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <h3 className="h3" style={{ marginBottom: '16px' }}>No Surveys Yet</h3>
+                <p style={{ marginBottom: '20px' }}>
+                  Create your first survey to get started with BlueFox
+                </p>
+                <Button variant="primary" onClick={handleCreateSurvey}>
+                  Create Your First Survey
+                </Button>
+              </div>
+            </GlassCard>
+          )}
 
           <GlassCard>
             <h3 className="h3" style={{ marginBottom: '16px' }}>Quick Actions</h3>
@@ -152,6 +261,57 @@ const SurveyBuilderPage = () => {
           </GlassCard>
         </div>
       </main>
+
+      {/* Create Survey Modal */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '32px',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+          }}>
+            <h3 className="h3" style={{ marginBottom: '20px' }}>Create New Survey</h3>
+            <div style={{ marginBottom: '24px' }}>
+              <label className="form-label">Survey Title</label>
+              <Input
+                type="text"
+                value={newSurveyTitle}
+                onChange={(e) => setNewSurveyTitle(e.target.value)}
+                placeholder="Enter survey title..."
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateSurveySubmit()}
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+            <div className="flex gap-md" style={{ justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={handleCreateSurveySubmit}
+                loading={isCreating}
+                disabled={!newSurveyTitle.trim()}
+              >
+                {isCreating ? 'Creating...' : 'Create Survey'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

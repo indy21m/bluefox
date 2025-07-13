@@ -70,6 +70,7 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
             <ProgressBar 
               value={progress} 
               large 
+              showPercentage={false}
             />
           </div>
         )}

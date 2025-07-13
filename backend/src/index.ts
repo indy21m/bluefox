@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { convertKitRouter } from './routes/convertkit';
 import { surveysRouter } from './routes/surveys';
 import { authRouter } from './routes/auth';
+import surveyRouter from './routes/survey';
 
 // Load environment variables
 dotenv.config();
@@ -69,6 +70,7 @@ app.get('/health', (req, res) => {
 app.use('/api/convertkit', convertKitRouter);
 app.use('/api/surveys', surveysRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/survey', surveyRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -20,9 +20,11 @@ const SurveyEditorPage = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'kit-sync' | 'logic'>('overview');
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [showLogicBuilder, setShowLogicBuilder] = useState(false);
+  const [draggedQuestion, setDraggedQuestion] = useState<string | null>(null);
+  const [draggedOption, setDraggedOption] = useState<string | null>(null);
 
   useEffect(() => {
-    if (surveyId === 'demo') {
+    if (surveyId) {
       // Try to load saved survey from localStorage first
       const savedSurvey = localStorage.getItem(`bluefox_survey_${surveyId}`);
       if (savedSurvey) {
@@ -33,21 +35,32 @@ const SurveyEditorPage = () => {
             setSelectedQuestion(parsedSurvey.questions[0]);
           }
         } catch (error) {
-          // If parsing fails, use demo survey
+          // If parsing fails and it's demo, use demo survey
+          if (surveyId === 'demo') {
+            setSurvey(demoSurvey);
+            if (demoSurvey.questions.length > 0) {
+              setSelectedQuestion(demoSurvey.questions[0]);
+            }
+          } else {
+            showToast('Failed to load survey', 'error');
+            navigate('/admin/surveys');
+          }
+        }
+      } else {
+        // No saved survey
+        if (surveyId === 'demo') {
+          // Use demo survey
           setSurvey(demoSurvey);
           if (demoSurvey.questions.length > 0) {
             setSelectedQuestion(demoSurvey.questions[0]);
           }
-        }
-      } else {
-        // No saved survey, use demo survey
-        setSurvey(demoSurvey);
-        if (demoSurvey.questions.length > 0) {
-          setSelectedQuestion(demoSurvey.questions[0]);
+        } else {
+          showToast('Survey not found', 'error');
+          navigate('/admin/surveys');
         }
       }
     }
-  }, [surveyId]);
+  }, [surveyId, navigate, showToast]);
 
   const handleLogout = () => {
     logout();
@@ -145,6 +158,73 @@ const SurveyEditorPage = () => {
     showToast('Logic rule deleted', 'success');
   };
 
+  const handleQuestionDragStart = (questionId: string) => {
+    setDraggedQuestion(questionId);
+  };
+
+  const handleQuestionDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleQuestionDrop = (targetQuestionId: string) => {
+    if (!draggedQuestion || draggedQuestion === targetQuestionId) {
+      setDraggedQuestion(null);
+      return;
+    }
+
+    const sortedQuestions = [...survey.questions].sort((a, b) => a.order - b.order);
+    const draggedIndex = sortedQuestions.findIndex(q => q.id === draggedQuestion);
+    const targetIndex = sortedQuestions.findIndex(q => q.id === targetQuestionId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedQuestion(null);
+      return;
+    }
+
+    // Remove dragged question and insert at target position
+    const reorderedQuestions = [...sortedQuestions];
+    const [draggedQuestionObj] = reorderedQuestions.splice(draggedIndex, 1);
+    reorderedQuestions.splice(targetIndex, 0, draggedQuestionObj);
+
+    // Update order numbers
+    reorderedQuestions.forEach((q, index) => {
+      q.order = index + 1;
+    });
+
+    setSurvey({ ...survey, questions: reorderedQuestions });
+    setDraggedQuestion(null);
+    showToast('Question order updated', 'success');
+  };
+
+  const handleOptionDragStart = (optionId: string) => {
+    setDraggedOption(optionId);
+  };
+
+  const handleOptionDrop = (targetOptionId: string) => {
+    if (!draggedOption || !selectedQuestion || draggedOption === targetOptionId) {
+      setDraggedOption(null);
+      return;
+    }
+
+    const options = selectedQuestion.options || [];
+    const draggedIndex = options.findIndex(opt => opt.id === draggedOption);
+    const targetIndex = options.findIndex(opt => opt.id === targetOptionId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedOption(null);
+      return;
+    }
+
+    // Reorder options
+    const reorderedOptions = [...options];
+    const [draggedOptionObj] = reorderedOptions.splice(draggedIndex, 1);
+    reorderedOptions.splice(targetIndex, 0, draggedOptionObj);
+
+    handleQuestionUpdate(selectedQuestion.id, { options: reorderedOptions });
+    setDraggedOption(null);
+    showToast('Answer option order updated', 'success');
+  };
+
   const handleReorderQuestion = (questionId: string, direction: 'up' | 'down') => {
     const currentIndex = survey.questions.findIndex(q => q.id === questionId);
     if (currentIndex === -1) return;
@@ -193,50 +273,179 @@ const SurveyEditorPage = () => {
         }
       />
       
-      <main className="container" style={{ paddingTop: '40px', width: '100%' }}>
-        <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <Input
-                type="text"
-                value={survey.title}
-                onChange={(e) => handleSurveyTitleChange(e.target.value)}
-                style={{ fontSize: '28px', fontWeight: 'bold', border: 'none', background: 'transparent', padding: 0 }}
-                placeholder="Survey Title..."
-              />
-            </div>
-            <div className="flex gap-md">
-              <Link to="/admin/surveys">
-                <Button variant="secondary">← Back to Surveys</Button>
-              </Link>
-              <Link to={`/survey/${surveyId}`} target="_blank">
-                <Button variant="secondary">
-                  🔍 Test Survey
-                </Button>
-              </Link>
-              <Button 
-                variant="primary" 
-                onClick={handleSaveSurvey}
-                loading={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Survey'}
-              </Button>
-            </div>
-          </div>
-          <p className="text-lg text-gray-600">
-            Configure questions, field mappings, and conditional logic
-          </p>
-        </div>
+      <main className="container" style={{ paddingTop: '20px', width: '100%' }}>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg" style={{ width: '100%' }}>
           {/* Question List */}
           <div>
             <GlassCard>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 className="h3">Questions ({survey.questions.length})</h3>
-                <Button variant="primary" size="sm" onClick={handleAddQuestion}>
-                  + Add
-                </Button>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: '20px',
+                width: '100%'
+              }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <h3 
+                    className="h3" 
+                    style={{ 
+                      margin: 0, 
+                      fontSize: '20px',
+                      cursor: 'text',
+                      display: survey.title ? 'block' : 'none'
+                    }}
+                    onClick={() => {
+                      const input = document.getElementById('survey-title-input');
+                      const display = document.getElementById('survey-title-display');
+                      if (input && display) {
+                        input.style.display = 'block';
+                        display.style.display = 'none';
+                        input.focus();
+                        input.select();
+                      }
+                    }}
+                    id="survey-title-display"
+                  >
+                    {survey.title}
+                  </h3>
+                  <Input
+                    id="survey-title-input"
+                    type="text"
+                    value={survey.title}
+                    onChange={(e) => {
+                      handleSurveyTitleChange(e.target.value);
+                      // Show temporary save indicator
+                      const saveIndicator = document.getElementById('title-save-indicator');
+                      if (saveIndicator) {
+                        saveIndicator.style.opacity = '1';
+                        setTimeout(() => {
+                          saveIndicator.style.opacity = '0';
+                        }, 2000);
+                      }
+                    }}
+                    style={{ 
+                      fontSize: '20px', 
+                      fontWeight: '600', 
+                      border: '1px solid var(--primary-blue)', 
+                      background: 'white', 
+                      padding: '4px 12px',
+                      borderRadius: '6px',
+                      transition: 'all 0.2s',
+                      width: '100%',
+                      display: survey.title ? 'none' : 'block'
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value) {
+                        e.target.style.display = 'none';
+                        const display = document.getElementById('survey-title-display');
+                        if (display) display.style.display = 'block';
+                      }
+                      handleSaveSurvey();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.target.blur();
+                      }
+                    }}
+                    placeholder="Survey Title..."
+                  />
+                  <div 
+                    id="title-save-indicator"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '-20px',
+                      left: '12px',
+                      backgroundColor: 'var(--success)',
+                      color: 'white',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      opacity: '0',
+                      transition: 'opacity 0.3s',
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    ✓ Saved
+                  </div>
+                  
+                  {/* Survey Description */}
+                  <div style={{ marginTop: '8px' }}>
+                    <p 
+                      style={{ 
+                        margin: 0, 
+                        fontSize: '14px',
+                        color: 'var(--gray-600)',
+                        cursor: 'text',
+                        display: survey.description || !survey.title ? 'none' : 'block'
+                      }}
+                      onClick={() => {
+                        const input = document.getElementById('survey-description-input');
+                        const display = document.getElementById('survey-description-display');
+                        if (input && display) {
+                          input.style.display = 'block';
+                          display.style.display = 'none';
+                          input.focus();
+                          input.select();
+                        }
+                      }}
+                      id="survey-description-display"
+                    >
+                      {survey.description || 'Click to add description...'}
+                    </p>
+                    <Input
+                      id="survey-description-input"
+                      type="text"
+                      value={survey.description || ''}
+                      onChange={(e) => {
+                        setSurvey({ ...survey, description: e.target.value });
+                      }}
+                      style={{ 
+                        fontSize: '14px', 
+                        border: '1px solid var(--primary-blue)', 
+                        background: 'white', 
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        transition: 'all 0.2s',
+                        width: '100%',
+                        display: 'none'
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.display = 'none';
+                        const display = document.getElementById('survey-description-display');
+                        if (display && survey.title) display.style.display = 'block';
+                        handleSaveSurvey();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.target.blur();
+                        }
+                      }}
+                      placeholder="Add a description for your survey..."
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-sm" style={{ flexShrink: 0 }}>
+                  <Link to="/admin/surveys">
+                    <Button variant="secondary" size="sm">← Back</Button>
+                  </Link>
+                  <Link to={`/survey/${survey.slug || surveyId}`} target="_blank">
+                    <Button variant="secondary" size="sm">
+                      🔍 Test
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={handleSaveSurvey}
+                    loading={isSaving}
+                  >
+                    {isSaving ? '...' : '💾'}
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleAddQuestion}>
+                    + Add
+                  </Button>
+                </div>
               </div>
               
               <div className="grid gap-sm">
@@ -245,14 +454,20 @@ const SurveyEditorPage = () => {
                   .map((question, index) => (
                   <div
                     key={question.id}
+                    draggable
+                    onDragStart={() => handleQuestionDragStart(question.id)}
+                    onDragOver={handleQuestionDragOver}
+                    onDrop={() => handleQuestionDrop(question.id)}
                     onClick={() => setSelectedQuestion(question)}
                     style={{
                       padding: '12px',
                       border: `2px solid ${selectedQuestion?.id === question.id ? 'var(--primary-blue)' : 'var(--gray-200)'}`,
                       borderRadius: '8px',
-                      cursor: 'pointer',
-                      background: selectedQuestion?.id === question.id ? 'var(--gray-50)' : 'transparent',
-                      transition: 'all 0.2s'
+                      cursor: draggedQuestion ? 'grabbing' : 'grab',
+                      background: draggedQuestion === question.id ? 'var(--primary-light)' : 
+                                selectedQuestion?.id === question.id ? 'var(--gray-50)' : 'transparent',
+                      transition: 'all 0.2s',
+                      opacity: draggedQuestion === question.id ? 0.5 : 1
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -283,7 +498,10 @@ const SurveyEditorPage = () => {
                             border: 'none',
                             cursor: index === 0 ? 'not-allowed' : 'pointer',
                             opacity: index === 0 ? 0.3 : 1,
-                            padding: '4px'
+                            padding: '4px',
+                            color: 'var(--gray-600)',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
                           }}
                         >
                           ↑
@@ -299,7 +517,10 @@ const SurveyEditorPage = () => {
                             border: 'none',
                             cursor: index === survey.questions.length - 1 ? 'not-allowed' : 'pointer',
                             opacity: index === survey.questions.length - 1 ? 0.3 : 1,
-                            padding: '4px'
+                            padding: '4px',
+                            color: 'var(--gray-600)',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
                           }}
                         >
                           ↓
@@ -317,16 +538,22 @@ const SurveyEditorPage = () => {
             {selectedQuestion ? (
               <GlassCard>
 
-                {/* Tab Navigation */}
+                {/* Tab Navigation and Delete Button */}
                 <div style={{ 
                   display: 'flex', 
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  borderBottom: '1px solid var(--gray-200)', 
                   marginBottom: '24px',
-                  gap: '0'
+                  gap: '16px'
                 }}>
-                  <div style={{ display: 'flex', gap: '0' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '4px',
+                    backgroundColor: 'var(--gray-100)',
+                    padding: '4px',
+                    borderRadius: '8px',
+                    flex: 1
+                  }}>
                   {[
                     { id: 'overview', label: '📝 Overview' },
                     { id: 'kit-sync', label: '🔗 Sync with Kit' },
@@ -336,15 +563,17 @@ const SurveyEditorPage = () => {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as 'overview' | 'kit-sync' | 'logic')}
                       style={{
-                        padding: '12px 20px',
+                        padding: '8px 16px',
                         border: 'none',
-                        background: 'none',
-                        borderBottom: activeTab === tab.id ? '2px solid var(--primary-blue)' : '2px solid transparent',
-                        color: activeTab === tab.id ? 'var(--primary-blue)' : 'var(--gray-600)',
+                        background: activeTab === tab.id ? 'white' : 'transparent',
+                        boxShadow: activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        borderRadius: '6px',
+                        color: activeTab === tab.id ? 'var(--gray-800)' : 'var(--gray-600)',
                         fontWeight: activeTab === tab.id ? '600' : '400',
                         cursor: 'pointer',
                         fontSize: '14px',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        flex: 1
                       }}
                     >
                       {tab.label}
@@ -370,7 +599,8 @@ const SurveyEditorPage = () => {
                     style={{ 
                       color: 'var(--error)', 
                       border: '1px solid var(--error)',
-                      backgroundColor: 'transparent'
+                      backgroundColor: 'transparent',
+                      flexShrink: 0
                     }}
                   >
                     🗑️ Delete Question
@@ -405,26 +635,38 @@ const SurveyEditorPage = () => {
                     {/* Question Type */}
                     <div>
                       <label className="form-label">Question Type</label>
-                      <select
-                        value={selectedQuestion.type}
-                        onChange={(e) => handleQuestionUpdate(selectedQuestion.id, { type: e.target.value as Question['type'] })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid var(--gray-300)',
-                          borderRadius: 'var(--radius-md)',
-                          fontSize: '14px',
-                          backgroundColor: 'white',
-                          color: 'var(--gray-800)'
-                        }}
-                      >
-                        <option value="multiple_choice">Multiple Choice</option>
-                        <option value="text">Text Input</option>
-                        <option value="email">Email</option>
-                        <option value="number">Number</option>
-                        <option value="boolean">Yes/No</option>
-                        <option value="scale">Scale (1-10)</option>
-                      </select>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {[
+                          { value: 'multiple_choice', label: 'Multiple Choice', icon: '🗳️' },
+                          { value: 'text', label: 'Text Input', icon: '📝' },
+                          { value: 'email', label: 'Email', icon: '📧' },
+                          { value: 'number', label: 'Number', icon: '🔢' },
+                          { value: 'boolean', label: 'Yes/No', icon: '✅' },
+                          { value: 'scale', label: 'Scale', icon: '📏' }
+                        ].map((type) => (
+                          <button
+                            key={type.value}
+                            onClick={() => handleQuestionUpdate(selectedQuestion.id, { type: type.value as Question['type'] })}
+                            style={{
+                              padding: '8px 16px',
+                              border: selectedQuestion.type === type.value ? '2px solid var(--primary-blue)' : '1px solid var(--gray-200)',
+                              borderRadius: '6px',
+                              background: selectedQuestion.type === type.value ? 'var(--primary-light)' : 'white',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '14px',
+                              fontWeight: selectedQuestion.type === type.value ? '600' : '400',
+                              color: selectedQuestion.type === type.value ? 'var(--primary-blue)' : 'var(--gray-700)'
+                            }}
+                          >
+                            <span style={{ fontSize: '16px' }}>{type.icon}</span>
+                            <span>{type.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Required toggle */}
@@ -445,11 +687,61 @@ const SurveyEditorPage = () => {
                     {selectedQuestion.type === 'multiple_choice' && (
                       <div>
                         <label className="form-label">Answer Options</label>
-                        <div className="grid gap-sm">
+                        <div 
+                          style={{ 
+                            backgroundColor: 'var(--gray-50)',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            border: '1px solid var(--gray-200)',
+                            width: '100%'
+                          }}
+                        >
+                        <div 
+                          className="grid gap-sm" 
+                          style={{ 
+                            maxHeight: '320px',
+                            overflowY: 'auto',
+                            paddingRight: '8px',
+                            width: '100%'
+                          }}
+                        >
                           {selectedQuestion.options?.map((option, index) => (
-                            <div key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <Input
+                            <div 
+                              key={option.id} 
+                              draggable
+                              onDragStart={() => handleOptionDragStart(option.id)}
+                              onDragOver={handleQuestionDragOver}
+                              onDrop={() => handleOptionDrop(option.id)}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '12px',
+                                padding: '12px',
+                                backgroundColor: 'white',
+                                borderRadius: '8px',
+                                border: '1px solid var(--gray-200)',
+                                cursor: draggedOption ? 'grabbing' : 'grab',
+                                opacity: draggedOption === option.id ? 0.5 : 1,
+                                transition: 'all 0.2s',
+                                width: '100%'
+                              }}
+                            >
+                              <div style={{ 
+                                width: '24px', 
+                                height: '24px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                fontSize: '14px',
+                                color: 'var(--gray-400)',
+                                flexShrink: 0,
+                                cursor: 'grab'
+                              }}>
+                                ⋮⋮
+                              </div>
+                              <input
                                 type="text"
+                                className="form-input"
                                 value={option.text}
                                 onChange={(e) => {
                                   const updatedOptions = selectedQuestion.options!.map(opt => 
@@ -458,7 +750,26 @@ const SurveyEditorPage = () => {
                                   handleQuestionUpdate(selectedQuestion.id, { options: updatedOptions });
                                 }}
                                 placeholder={`Option ${index + 1}`}
-                                style={{ flex: 1 }}
+                                style={{ 
+                                  flex: 1,
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: 'white',
+                                  border: '1px solid var(--gray-300)',
+                                  borderRadius: '6px',
+                                  transition: 'all 0.2s',
+                                  minWidth: 0,
+                                  width: '100%',
+                                  boxSizing: 'border-box'
+                                }}
+                                onFocus={(e) => {
+                                  e.target.style.borderColor = 'var(--primary-blue)';
+                                  e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                  e.target.style.borderColor = 'var(--gray-300)';
+                                  e.target.style.boxShadow = 'none';
+                                }}
                               />
                               <button
                                 onClick={() => {
@@ -467,18 +778,36 @@ const SurveyEditorPage = () => {
                                 }}
                                 disabled={selectedQuestion.options!.length <= 2}
                                 style={{
-                                  background: 'none',
-                                  border: 'none',
+                                  background: 'transparent',
+                                  border: '1px solid transparent',
+                                  borderRadius: '4px',
                                   color: 'var(--error)',
                                   cursor: selectedQuestion.options!.length <= 2 ? 'not-allowed' : 'pointer',
                                   opacity: selectedQuestion.options!.length <= 2 ? 0.3 : 1,
-                                  padding: '8px'
+                                  padding: '4px',
+                                  fontSize: '18px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '24px',
+                                  height: '24px',
+                                  flexShrink: 0,
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (selectedQuestion.options!.length > 2) {
+                                    e.currentTarget.style.backgroundColor = 'var(--error-light)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
                                 }}
                               >
-                                ✕
+                                ×
                               </button>
                             </div>
                           ))}
+                          </div>
                           <Button
                             variant="secondary"
                             size="sm"
@@ -491,7 +820,11 @@ const SurveyEditorPage = () => {
                               const updatedOptions = [...(selectedQuestion.options || []), newOption];
                               handleQuestionUpdate(selectedQuestion.id, { options: updatedOptions });
                             }}
-                            style={{ justifyContent: 'flex-start', width: 'fit-content' }}
+                            style={{ 
+                              justifyContent: 'flex-start', 
+                              width: 'fit-content',
+                              marginTop: '12px'
+                            }}
                           >
                             + Add Option
                           </Button>
@@ -816,8 +1149,14 @@ const SurveyEditorPage = () => {
 
         {/* Survey Settings */}
         <div style={{ marginTop: '40px' }}>
-          <GlassCard dark>
-            <h3 className="h3" style={{ marginBottom: '20px' }}>Survey Settings</h3>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: 'var(--radius-xl)',
+            padding: 'var(--space-3xl)',
+            boxShadow: 'var(--shadow-lg)',
+            border: '1px solid var(--glass-border)'
+          }}>
+            <h3 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px', color: 'var(--gray-800)' }}>Survey Settings</h3>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg" style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -832,8 +1171,8 @@ const SurveyEditorPage = () => {
                   style={{ width: '20px', height: '20px' }}
                 />
                 <label htmlFor="showProgress">
-                  <div className="font-medium">Show progress bar</div>
-                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Display completion progress</div>
+                  <div className="font-medium" style={{ color: 'var(--gray-800)' }}>Show progress bar</div>
+                  <div className="text-sm" style={{ color: 'var(--gray-600)' }}>Display completion progress</div>
                 </label>
               </div>
               
@@ -849,8 +1188,8 @@ const SurveyEditorPage = () => {
                   style={{ width: '20px', height: '20px' }}
                 />
                 <label htmlFor="requireEmail">
-                  <div className="font-medium">Require email</div>
-                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Capture email before survey</div>
+                  <div className="font-medium" style={{ color: 'var(--gray-800)' }}>Require email</div>
+                  <div className="text-sm" style={{ color: 'var(--gray-600)' }}>Capture email before survey</div>
                 </label>
               </div>
               
@@ -866,9 +1205,41 @@ const SurveyEditorPage = () => {
                   style={{ width: '20px', height: '20px' }}
                 />
                 <label htmlFor="allowBackNavigation">
-                  <div className="font-medium">Show back button</div>
-                  <div className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Allow users to go back to previous questions</div>
+                  <div className="font-medium" style={{ color: 'var(--gray-800)' }}>Show back button</div>
+                  <div className="text-sm" style={{ color: 'var(--gray-600)' }}>Allow users to go back to previous questions</div>
                 </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg" style={{ marginBottom: '24px' }}>
+              <div>
+                <label className="form-label">Survey URL Slug</label>
+                <Input
+                  type="text"
+                  value={survey.slug ?? ''}
+                  onChange={(e) => {
+                    // Only allow lowercase letters, numbers, and hyphens
+                    const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    setSurvey({ ...survey, slug });
+                  }}
+                  placeholder="my-survey-name"
+                />
+                <p className="text-xs" style={{ marginTop: '4px', color: 'var(--gray-600)' }}>
+                  Custom URL: /survey/{survey.slug || 'my-survey-name'}
+                </p>
+              </div>
+              
+              <div>
+                <label className="form-label">Survey ID</label>
+                <Input
+                  type="text"
+                  value={survey.id}
+                  disabled
+                  style={{ backgroundColor: 'var(--gray-100)', cursor: 'not-allowed' }}
+                />
+                <p className="text-xs" style={{ marginTop: '4px', color: 'var(--gray-600)' }}>
+                  Alternative URL: /survey/{survey.id}
+                </p>
               </div>
             </div>
 
@@ -884,7 +1255,7 @@ const SurveyEditorPage = () => {
                   })}
                   placeholder="Thank you for completing our survey!"
                 />
-                <p className="text-xs" style={{ marginTop: '4px', color: 'rgba(255,255,255,0.8)' }}>
+                <p className="text-xs" style={{ marginTop: '4px', color: 'var(--gray-600)' }}>
                   Custom message shown after survey completion
                 </p>
               </div>
@@ -900,12 +1271,12 @@ const SurveyEditorPage = () => {
                   })}
                   placeholder="https://example.com/thank-you"
                 />
-                <p className="text-xs" style={{ marginTop: '4px', color: 'rgba(255,255,255,0.8)' }}>
+                <p className="text-xs" style={{ marginTop: '4px', color: 'var(--gray-600)' }}>
                   Automatically redirect users after 5 seconds
                 </p>
               </div>
             </div>
-          </GlassCard>
+          </div>
         </div>
 
         {/* Add padding at bottom */}

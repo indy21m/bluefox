@@ -7,22 +7,74 @@ interface SurveyContainerProps {
   survey: Survey;
   onComplete: (response: SurveyResponse) => void;
   onExit?: () => void;
+  initialEmail?: string | null;
 }
 
 const SurveyContainer: React.FC<SurveyContainerProps> = ({
   survey,
   onComplete,
-  onExit
+  onExit,
+  initialEmail
 }) => {
+  // Handle empty surveys
+  if (!survey.questions || survey.questions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ padding: '20px' }}>
+        <div className="glass-card" style={{ textAlign: 'center', padding: '40px' }}>
+          <h2 className="h2" style={{ marginBottom: '16px' }}>Survey Not Ready</h2>
+          <p>This survey doesn't have any questions yet. Please add questions in the editor first.</p>
+          {onExit && (
+            <button 
+              className="btn btn-primary" 
+              style={{ marginTop: '20px' }}
+              onClick={onExit}
+            >
+              Return to Editor
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const sortedQuestions = [...survey.questions].sort((a, b) => a.order - b.order);
+  const firstQuestionId = sortedQuestions[0]?.id || '';
+
+  // Initialize answers array with email if provided
+  const initialAnswers: Answer[] = [];
+  let startQuestionId = survey.startQuestionId || firstQuestionId;
+  
+  // If we have an initial email and there's an email question, auto-answer it
+  if (initialEmail && initialEmail.includes('@')) {
+    const emailQuestion = sortedQuestions.find(q => q.type === 'email');
+    if (emailQuestion) {
+      initialAnswers.push({
+        questionId: emailQuestion.id,
+        value: initialEmail
+      });
+      
+      // If the first question is an email question, skip to the next one
+      if (emailQuestion.id === startQuestionId) {
+        const emailQuestionIndex = sortedQuestions.findIndex(q => q.id === emailQuestion.id);
+        if (emailQuestionIndex < sortedQuestions.length - 1) {
+          startQuestionId = sortedQuestions[emailQuestionIndex + 1].id;
+        }
+      }
+    }
+  }
+
   const [session, setSession] = useState<SurveySession>({
     surveyId: survey.id,
-    currentQuestionId: survey.startQuestionId,
-    answers: [],
+    currentQuestionId: startQuestionId,
+    answers: initialAnswers,
     startedAt: new Date(),
-    isComplete: false
+    isComplete: false,
+    respondentEmail: initialEmail || undefined
   });
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
+    sortedQuestions.findIndex(q => q.id === startQuestionId)
+  );
 
   const getCurrentQuestion = (): Question | null => {
     return survey.questions.find(q => q.id === session.currentQuestionId) || null;
