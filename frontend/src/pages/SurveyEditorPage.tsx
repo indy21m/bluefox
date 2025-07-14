@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { routes } from '../utils/navigation';
 import { Header, GlassCard, Input } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToastCompat';
@@ -96,25 +97,37 @@ const SurveyEditorPage = () => {
   };
 
   const handleAddQuestion = () => {
-    const newQuestion: Question = {
-      id: `question_${Date.now()}`,
-      type: 'multiple_choice',
-      title: 'New Question',
-      required: true,
-      options: [
-        { id: `option_${Date.now()}_1`, text: 'Option 1', value: 'option1' },
-        { id: `option_${Date.now()}_2`, text: 'Option 2', value: 'option2' }
-      ],
-      order: survey.questions.length + 1
-    };
-    
-    const updatedSurvey = {
-      ...survey,
-      questions: [...survey.questions, newQuestion]
-    };
-    
-    setSurvey(updatedSurvey);
-    setSelectedQuestion(newQuestion);
+    try {
+      const timestamp = Date.now();
+      const newQuestion: Question = {
+        id: `question_${timestamp}`,
+        type: 'multiple_choice',
+        title: `Question ${survey.questions.length + 1}`,
+        required: true,
+        options: [
+          { id: `option_${timestamp}_1`, text: 'Option 1', value: 'option1' },
+          { id: `option_${timestamp}_2`, text: 'Option 2', value: 'option2' }
+        ],
+        order: survey.questions.length + 1
+      };
+      
+      const updatedSurvey = {
+        ...survey,
+        questions: [...survey.questions, newQuestion]
+      };
+      
+      setSurvey(updatedSurvey);
+      setSelectedQuestion(newQuestion);
+      showToast('Question added!', 'success');
+      
+      // Auto-save after adding
+      setTimeout(() => {
+        localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(updatedSurvey));
+      }, 100);
+    } catch (error) {
+      console.error('Error adding question:', error);
+      showToast('Failed to add question', 'error');
+    }
   };
 
   const handleDeleteQuestion = (questionId: string) => {
@@ -272,13 +285,24 @@ const SurveyEditorPage = () => {
   };
 
   const handleSaveSurvey = async () => {
+    if (!surveyId || !survey) {
+      showToast('Cannot save: Invalid survey data', 'error');
+      return;
+    }
+    
     setIsSaving(true);
     try {
-      // Save to localStorage for now (until we have backend CRUD)
-      localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(survey));
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save to localStorage
+      const key = `bluefox_survey_${surveyId}`;
+      localStorage.setItem(key, JSON.stringify(survey));
+      
+      // Force a small delay to show the save animation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       showToast('Survey saved successfully!', 'success');
+      console.log('Survey saved:', surveyId);
     } catch (error) {
+      console.error('Save error:', error);
       showToast('Failed to save survey', 'error');
     } finally {
       setIsSaving(false);
@@ -477,11 +501,12 @@ const SurveyEditorPage = () => {
                   </div>
                 </div>
                 <div className="flex gap-sm" style={{ flexShrink: 0 }}>
-                  <Link to="/surveys">
-                    <button className="btn btn-secondary">
-                      <span>← Back</span>
-                    </button>
-                  </Link>
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={() => navigate(routes.surveys)}
+                  >
+                    <span>← Back</span>
+                  </button>
                   <Link to={`/survey/${survey.slug || surveyId}`} target="_blank">
                     <button className="btn btn-secondary">
                       <span>🔍 Test</span>

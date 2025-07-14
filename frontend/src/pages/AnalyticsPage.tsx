@@ -390,7 +390,7 @@ const AnalyticsPage = () => {
                             <span className="font-medium">{stat.responses}</span>
                           </div>
                           <div>
-                            <Link to={`/admin/surveys/${stat.surveyId}/analytics`}>
+                            <Link to={`/surveys/${stat.surveyId}/analytics`}>
                               <span className="text-primary cursor-pointer hover:underline">View →</span>
                             </Link>
                           </div>
@@ -401,7 +401,7 @@ const AnalyticsPage = () => {
               )}
             </div>
             
-            <Link to="/admin/surveys">
+            <Link to="/surveys">
               <button className="btn btn-secondary">
                 <span>Manage Surveys</span>
               </button>
@@ -465,7 +465,7 @@ const AnalyticsPage = () => {
                   </button>
                 </Link>
               )}
-              <Link to="/admin/surveys">
+              <Link to="/surveys">
                 <button className="btn btn-secondary" style={{ width: '100%' }}>
                   <span>Create New Survey</span>
                 </button>
