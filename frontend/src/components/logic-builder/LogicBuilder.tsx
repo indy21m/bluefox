@@ -1,7 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import ReactFlow, {
   Controls,
-  MiniMap,
   Background,
   useNodesState,
   useEdgesState,
@@ -75,8 +74,41 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
           });
         }
 
-        // Connect questions in sequence
-        if (index < survey.questions.length - 1) {
+        // Check for existing conditional logic
+        if (question.conditionalLogic && question.conditionalLogic.length > 0) {
+          // Convert conditional logic to edges
+          question.conditionalLogic.forEach((logic) => {
+            const targetId = logic.nextQuestionId || 'end';
+            const edgeId = `${question.id}-${targetId}`;
+            
+            // Check if edge already exists
+            const existingEdge = initialEdges.find(e => e.id === edgeId);
+            
+            if (!existingEdge) {
+              const conditions: Condition[] = logic.value !== '*' ? [{
+                id: logic.id,
+                operator: logic.condition as any,
+                value: logic.value
+              }] : [];
+              
+              initialEdges.push({
+                id: edgeId,
+                source: question.id,
+                target: targetId,
+                label: conditions.length > 0 ? '1 condition' : undefined,
+                style: {
+                  stroke: conditions.length > 0 ? '#F59E0B' : '#6366F1',
+                  strokeWidth: 2
+                },
+                data: {
+                  conditions,
+                  operator: 'AND'
+                }
+              });
+            }
+          });
+        } else if (index < survey.questions.length - 1) {
+          // Default sequence if no conditional logic
           initialEdges.push({
             id: `${question.id}-${survey.questions[index + 1].id}`,
             source: question.id,
@@ -212,21 +244,6 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
         style={{ background: 'var(--gray-50)' }}
       >
         <Background color="#E5E7EB" gap={16} />
-        <MiniMap 
-          nodeColor={(node) => {
-            switch (node.type) {
-              case 'start': return 'var(--primary)';
-              case 'question': return '#6366F1';
-              case 'logic': return '#F59E0B';
-              case 'end': return '#10B981';
-              default: return '#9CA3AF';
-            }
-          }}
-          style={{
-            backgroundColor: 'white',
-            border: '1px solid var(--gray-200)',
-          }}
-        />
         <Controls />
       </ReactFlow>
 

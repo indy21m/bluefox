@@ -141,6 +141,19 @@ const SurveyEditorPage = () => {
     
     const updatedLogic = [...(selectedQuestion.conditionalLogic || []), newLogic];
     handleQuestionUpdate(selectedQuestion.id, { conditionalLogic: updatedLogic });
+    
+    // Also update the flow data if it exists
+    if (survey.flowData) {
+      const { nodes, edges } = survey.flowData;
+      // Remove any existing default edge from this question
+      const filteredEdges = edges.filter(e => 
+        !(e.source === selectedQuestion.id && (!e.data?.conditions || e.data.conditions.length === 0))
+      );
+      setSurvey({
+        ...survey,
+        flowData: { nodes, edges: filteredEdges }
+      });
+    }
   };
 
   const handleUpdateLogicRule = (index: number, updates: Partial<ConditionalLogic>) => {
@@ -262,10 +275,55 @@ const SurveyEditorPage = () => {
   };
 
   const handleSaveFlowData = (nodes: FlowNode[], edges: FlowEdge[]) => {
-    setSurvey({
+    // Update the survey with new flow data
+    const updatedSurvey = {
       ...survey,
       flowData: { nodes, edges }
+    };
+    
+    // Sync visual flow to conditional logic for backward compatibility
+    const updatedQuestions = survey.questions.map(question => {
+      // Find edges from this question
+      const questionEdges = edges.filter(edge => edge.source === question.id);
+      
+      // Convert edges to conditional logic
+      const newConditionalLogic: ConditionalLogic[] = [];
+      
+      questionEdges.forEach(edge => {
+        if (edge.data?.conditions && edge.data.conditions.length > 0) {
+          // For edges with conditions
+          edge.data.conditions.forEach(condition => {
+            newConditionalLogic.push({
+              id: `logic_${edge.id}_${condition.id}`,
+              questionId: question.id,
+              condition: condition.operator as any,
+              value: condition.value || '',
+              nextQuestionId: edge.target === 'end' ? null : edge.target
+            });
+          });
+        } else if (edge.target !== 'end') {
+          // For edges without conditions (direct connections)
+          newConditionalLogic.push({
+            id: `logic_${edge.id}_default`,
+            questionId: question.id,
+            condition: 'equals',
+            value: '*', // Special value to indicate "always"
+            nextQuestionId: edge.target
+          });
+        }
+      });
+      
+      return {
+        ...question,
+        conditionalLogic: newConditionalLogic.length > 0 ? newConditionalLogic : question.conditionalLogic
+      };
     });
+    
+    setSurvey({
+      ...updatedSurvey,
+      questions: updatedQuestions
+    });
+    
     showToast('Logic flow saved!', 'success');
   };
 
@@ -1101,11 +1159,17 @@ const SurveyEditorPage = () => {
                                   {survey.questions
                                     .filter(q => q.id !== selectedQuestion.id)
                                     .sort((a, b) => a.order - b.order)
-                                    .map((question, qIndex) => (
-                                      <option key={question.id} value={question.id}>
-                                        Q{qIndex + 1}: {question.title}
-                                      </option>
-                                    ))}
+                                    .map((question) => {
+                                      // Find the actual index in the full question list
+                                      const actualIndex = survey.questions
+                                        .sort((a, b) => a.order - b.order)
+                                        .findIndex(q => q.id === question.id);
+                                      return (
+                                        <option key={question.id} value={question.id}>
+                                          Q{actualIndex + 1}: {question.title}
+                                        </option>
+                                      );
+                                    })}
                                 </select>
 
                                 <button
