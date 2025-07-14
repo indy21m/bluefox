@@ -30,10 +30,10 @@ const AdminPage = () => {
       
       <main className="container" style={{ paddingTop: '60px', paddingBottom: '60px' }}>
         <div style={{ marginBottom: '60px', textAlign: 'center' }}>
-          <h1 className="h1 gradient-text" style={{ marginBottom: '16px', fontSize: '48px' }}>
+          <h1 className="h1 gradient-text" style={{ marginBottom: '12px', fontSize: '36px' }}>
             BlueFox Dashboard
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-base text-gray-700" style={{ fontWeight: 500 }}>
             Manage your surveys, integrations, and analytics in one place
           </p>
         </div>
@@ -46,23 +46,23 @@ const AdminPage = () => {
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              padding: '32px',
+              padding: '24px',
               textAlign: 'center'
             }}>
               <div style={{
-                width: '80px',
-                height: '80px',
+                width: '60px',
+                height: '60px',
                 background: 'var(--primary-gradient)',
                 borderRadius: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 24px',
+                margin: '0 auto 20px',
               }}>
-                <FileText size={40} color="white" />
+                <FileText size={32} color="white" />
               </div>
-              <h2 className="h2" style={{ marginBottom: '12px' }}>Surveys</h2>
-              <p className="text-gray-600" style={{ marginBottom: '32px', flex: 1 }}>
+              <h2 className="h2" style={{ marginBottom: '8px', fontSize: '20px' }}>Surveys</h2>
+              <p className="text-gray-700" style={{ marginBottom: '24px', flex: 1, fontSize: '15px', lineHeight: '1.4' }}>
                 Create and manage your survey campaigns
               </p>
               <button className="btn btn-primary" style={{ width: '100%' }}>
@@ -78,23 +78,23 @@ const AdminPage = () => {
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              padding: '32px',
+              padding: '24px',
               textAlign: 'center'
             }}>
               <div style={{
-                width: '80px',
-                height: '80px',
+                width: '60px',
+                height: '60px',
                 background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
                 borderRadius: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 24px',
+                margin: '0 auto 20px',
               }}>
-                <Settings size={40} color="white" />
+                <Settings size={32} color="white" />
               </div>
-              <h2 className="h2" style={{ marginBottom: '12px' }}>Integrations</h2>
-              <p className="text-gray-600" style={{ marginBottom: '32px', flex: 1 }}>
+              <h2 className="h2" style={{ marginBottom: '8px', fontSize: '20px' }}>Integrations</h2>
+              <p className="text-gray-700" style={{ marginBottom: '24px', flex: 1, fontSize: '15px', lineHeight: '1.4' }}>
                 Connect with your favorite tools
               </p>
               <button className="btn btn-primary" style={{ width: '100%', background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' }}>
@@ -110,23 +110,23 @@ const AdminPage = () => {
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              padding: '32px',
+              padding: '24px',
               textAlign: 'center'
             }}>
               <div style={{
-                width: '80px',
-                height: '80px',
+                width: '60px',
+                height: '60px',
                 background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 borderRadius: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 24px',
+                margin: '0 auto 20px',
               }}>
-                <BarChart size={40} color="white" />
+                <BarChart size={32} color="white" />
               </div>
-              <h2 className="h2" style={{ marginBottom: '12px' }}>Analytics</h2>
-              <p className="text-gray-600" style={{ marginBottom: '32px', flex: 1 }}>
+              <h2 className="h2" style={{ marginBottom: '8px', fontSize: '20px' }}>Analytics</h2>
+              <p className="text-gray-700" style={{ marginBottom: '24px', flex: 1, fontSize: '15px', lineHeight: '1.4' }}>
                 Track performance and insights
               </p>
               <button className="btn btn-primary" style={{ width: '100%', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}>
@@ -142,8 +142,8 @@ const AdminPage = () => {
           transition: all 0.3s ease;
         }
         .hover-lift:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
         }
       `}</style>
     </div>

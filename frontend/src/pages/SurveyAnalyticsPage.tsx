@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, Cell
 } from 'recharts';
 import type { Survey, Question } from '../types';
+import { API_ENDPOINTS } from '../config/api';
 
 interface SurveyAnalytics {
   surveyId: string;
@@ -56,7 +57,7 @@ const SurveyAnalyticsPage = () => {
 
   const loadAnalytics = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/survey/${surveyId}/analytics`);
+      const response = await fetch(API_ENDPOINTS.survey.analytics.survey(surveyId!));
       if (response.ok) {
         const data = await response.json();
         setAnalytics(data);
@@ -95,7 +96,7 @@ const SurveyAnalyticsPage = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/survey/${surveyId}/responses`);
+      const response = await fetch(API_ENDPOINTS.surveys.responses(surveyId!));
       if (response.ok) {
         const data = await response.json();
         // Convert to CSV format

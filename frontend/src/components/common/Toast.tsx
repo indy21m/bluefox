@@ -46,9 +46,6 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 3000 }
     <div
       className="toast"
       style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
         backgroundColor: getBackgroundColor(),
         color: 'white',
         padding: '16px 24px',
@@ -59,7 +56,6 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 3000 }
         gap: '12px',
         minWidth: '300px',
         maxWidth: '500px',
-        zIndex: 9999,
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'translateX(0)' : 'translateX(20px)',
         transition: 'all 0.3s ease',

@@ -4,6 +4,7 @@ import { SurveyContainer } from '../components/survey';
 import type { SurveyResponse, Survey } from '../types';
 import { demoSurvey } from '../data/demoSurvey';
 import { useConvertKit } from '../contexts/ConvertKitContext';
+import { API_ENDPOINTS } from '../config/api';
 
 const SurveyPage = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
@@ -61,7 +62,7 @@ const SurveyPage = () => {
   useEffect(() => {
     // Track survey view when survey is loaded
     if (survey && survey.id) {
-      fetch(`http://localhost:3001/api/survey/${survey.id}/view`, {
+      fetch(API_ENDPOINTS.survey.view(survey.id), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       }).catch(err => console.error('Failed to track view:', err));
@@ -100,7 +101,7 @@ const SurveyPage = () => {
         : undefined;
 
       // Send response to backend
-      const apiResponse = await fetch('http://localhost:3001/api/survey/responses', {
+      const apiResponse = await fetch(API_ENDPOINTS.survey.responses, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

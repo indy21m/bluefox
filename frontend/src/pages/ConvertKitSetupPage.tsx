@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToastCompat';
 import { useConvertKit } from '../contexts/ConvertKitContext';
+import { API_ENDPOINTS } from '../config/api';
 
 const ConvertKitSetupPage = () => {
   const { user, logout } = useAuth();
@@ -43,7 +44,7 @@ const ConvertKitSetupPage = () => {
     
     try {
       // Call our backend to test the connection
-      const response = await fetch('http://localhost:3001/api/convertkit/test-connection', {
+      const response = await fetch(API_ENDPOINTS.convertkit.testConnection, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ const ConvertKitSetupPage = () => {
         setSavedApiKey(apiKey);
         
         // Fetch custom fields
-        const fieldsResponse = await fetch('http://localhost:3001/api/convertkit/custom-fields', {
+        const fieldsResponse = await fetch(API_ENDPOINTS.convertkit.customFields, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

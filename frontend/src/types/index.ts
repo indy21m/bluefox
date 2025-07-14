@@ -5,6 +5,7 @@ export * from './convertkit';
 export * from './auth';
 export * from './api';
 export * from './theme';
+export * from './analytics';
 
 // Common utility types
 export type UUID = string;

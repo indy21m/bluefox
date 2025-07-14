@@ -65,6 +65,15 @@ const SurveyEditorPage = () => {
     }
   }, [surveyId, navigate, showToast]);
 
+  useEffect(() => {
+    // Add class to body for CSS targeting
+    document.body.classList.add('survey-editor-page');
+    
+    return () => {
+      document.body.classList.remove('survey-editor-page');
+    };
+  }, []);
+
   const handleLogout = () => {
     logout();
   };
@@ -369,30 +378,7 @@ const SurveyEditorPage = () => {
                 width: '100%'
               }}>
                 <div style={{ position: 'relative', flex: 1 }}>
-                  <h3 
-                    className="h3" 
-                    style={{ 
-                      margin: 0, 
-                      fontSize: '20px',
-                      cursor: 'text',
-                      display: survey.title ? 'block' : 'none'
-                    }}
-                    onClick={() => {
-                      const input = document.getElementById('survey-title-input') as HTMLInputElement;
-                      const display = document.getElementById('survey-title-display');
-                      if (input && display) {
-                        input.style.display = 'block';
-                        display.style.display = 'none';
-                        input.focus();
-                        input.select();
-                      }
-                    }}
-                    id="survey-title-display"
-                  >
-                    {survey.title}
-                  </h3>
                   <Input
-                    id="survey-title-input"
                     type="text"
                     value={survey.title}
                     onChange={(e) => {
@@ -409,25 +395,27 @@ const SurveyEditorPage = () => {
                     style={{ 
                       fontSize: '20px', 
                       fontWeight: '600', 
-                      border: '1px solid var(--primary-blue)', 
-                      background: 'white', 
+                      border: '1px solid transparent', 
+                      background: 'transparent', 
                       padding: '4px 12px',
                       borderRadius: '6px',
                       transition: 'all 0.2s',
-                      width: '100%',
-                      display: survey.title ? 'none' : 'block'
+                      width: '100%'
                     }}
-                    onBlur={(e) => {
-                      if (e.target.value) {
-                        e.target.style.display = 'none';
-                        const display = document.getElementById('survey-title-display');
-                        if (display) display.style.display = 'block';
-                      }
-                      handleSaveSurvey();
-                    }}
+                    onBlur={handleSaveSurvey}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && e.target instanceof HTMLElement) {
                         e.target.blur();
+                      }
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.border = '1px solid var(--primary-blue)';
+                      e.target.style.background = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (document.activeElement !== e.target) {
+                        e.target.style.border = '1px solid transparent';
+                        e.target.style.background = 'transparent';
                       }
                     }}
                     placeholder="Survey Title..."
@@ -453,30 +441,7 @@ const SurveyEditorPage = () => {
                   
                   {/* Survey Description */}
                   <div style={{ marginTop: '8px' }}>
-                    <p 
-                      style={{ 
-                        margin: 0, 
-                        fontSize: '14px',
-                        color: 'var(--gray-600)',
-                        cursor: 'text',
-                        display: survey.description || !survey.title ? 'none' : 'block'
-                      }}
-                      onClick={() => {
-                        const input = document.getElementById('survey-description-input') as HTMLInputElement;
-                        const display = document.getElementById('survey-description-display');
-                        if (input && display) {
-                          input.style.display = 'block';
-                          display.style.display = 'none';
-                          input.focus();
-                          input.select();
-                        }
-                      }}
-                      id="survey-description-display"
-                    >
-                      {survey.description || 'Click to add description...'}
-                    </p>
                     <Input
-                      id="survey-description-input"
                       type="text"
                       value={survey.description || ''}
                       onChange={(e) => {
@@ -484,23 +449,27 @@ const SurveyEditorPage = () => {
                       }}
                       style={{ 
                         fontSize: '14px', 
-                        border: '1px solid var(--primary-blue)', 
-                        background: 'white', 
+                        border: '1px solid transparent', 
+                        background: 'transparent', 
                         padding: '2px 8px',
                         borderRadius: '4px',
                         transition: 'all 0.2s',
-                        width: '100%',
-                        display: 'none'
+                        width: '100%'
                       }}
-                      onBlur={(e) => {
-                        e.target.style.display = 'none';
-                        const display = document.getElementById('survey-description-display');
-                        if (display && survey.title) display.style.display = 'block';
-                        handleSaveSurvey();
-                      }}
+                      onBlur={handleSaveSurvey}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.target instanceof HTMLElement) {
                           e.target.blur();
+                        }
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '1px solid var(--primary-blue)';
+                        e.target.style.background = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (document.activeElement !== e.target) {
+                          e.target.style.border = '1px solid transparent';
+                          e.target.style.background = 'transparent';
                         }
                       }}
                       placeholder="Add a description for your survey..."
@@ -1237,10 +1206,12 @@ const SurveyEditorPage = () => {
                         Design your survey flow visually. Drag to connect questions and add conditional logic.
                       </p>
                     </div>
-                    <LogicBuilder 
-                      survey={survey} 
-                      onSave={handleSaveFlowData}
-                    />
+                    <div className="logic-builder-wrapper" style={{ width: '100%', height: '600px', position: 'relative', overflow: 'visible', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      <LogicBuilder 
+                        survey={survey} 
+                        onSave={handleSaveFlowData}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -1276,24 +1247,7 @@ const SurveyEditorPage = () => {
           }}>
             <h3 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px', color: 'var(--gray-800)' }}>Survey Settings</h3>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg" style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <input
-                  type="checkbox"
-                  id="showProgress"
-                  checked={survey.settings.showProgressBar}
-                  onChange={(e) => setSurvey({
-                    ...survey,
-                    settings: { ...survey.settings, showProgressBar: e.target.checked }
-                  })}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <label htmlFor="showProgress">
-                  <div className="font-medium" style={{ color: 'var(--gray-800)' }}>Show progress bar</div>
-                  <div className="text-sm" style={{ color: 'var(--gray-600)' }}>Display completion progress</div>
-                </label>
-              </div>
-              
+            <div style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <input
                   type="checkbox"
@@ -1308,23 +1262,6 @@ const SurveyEditorPage = () => {
                 <label htmlFor="requireEmail">
                   <div className="font-medium" style={{ color: 'var(--gray-800)' }}>Require email</div>
                   <div className="text-sm" style={{ color: 'var(--gray-600)' }}>Capture email before survey</div>
-                </label>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <input
-                  type="checkbox"
-                  id="allowBackNavigation"
-                  checked={survey.settings.allowBackNavigation ?? true}
-                  onChange={(e) => setSurvey({
-                    ...survey,
-                    settings: { ...survey.settings, allowBackNavigation: e.target.checked }
-                  })}
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <label htmlFor="allowBackNavigation">
-                  <div className="font-medium" style={{ color: 'var(--gray-800)' }}>Show back button</div>
-                  <div className="text-sm" style={{ color: 'var(--gray-600)' }}>Allow users to go back to previous questions</div>
                 </label>
               </div>
             </div>

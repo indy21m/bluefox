@@ -13,6 +13,8 @@ import SurveyAnalyticsPage from './pages/SurveyAnalyticsPage';
 import ThemesPage from './pages/ThemesPage';
 
 function App() {
+  console.log('App component rendering');
+  
   return (
     <ThemeProvider>
       <ToastProvider>

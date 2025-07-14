@@ -6,13 +6,18 @@ import ReactFlow, {
   useEdgesState,
   addEdge,
   MarkerType,
+  ReactFlowProvider,
+  MiniMap,
+  Panel,
   type Connection,
   type Edge,
   type Node,
+  type NodeDragHandler,
 } from 'reactflow';
 import { motion } from 'framer-motion';
 
 import { QuestionNode, LogicNode, EndNode, StartNode } from './nodes';
+import { ConditionalEdge } from './edges';
 import ConditionEditor from './ConditionEditor';
 import type { Survey, Question, FlowNode, FlowEdge, Condition } from '../../types';
 
@@ -23,26 +28,42 @@ const nodeTypes = {
   start: StartNode,
 };
 
+const edgeTypes = {
+  conditional: ConditionalEdge,
+};
+
 interface LogicBuilderProps {
   survey: Survey;
   onSave: (nodes: FlowNode[], edges: FlowEdge[]) => void;
 }
 
-const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
+// Inner component that uses ReactFlow hooks
+const LogicBuilderInner = ({ survey, onSave }: LogicBuilderProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [showConditionEditor, setShowConditionEditor] = useState(false);
   const [selectedSourceQuestion, setSelectedSourceQuestion] = useState<Question | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [testPath, setTestPath] = useState<string[]>([]);
+
+  // Debug logging
+  console.log('LogicBuilder rendering, nodes count:', nodes.length, 'edges count:', edges.length);
 
   // Initialize nodes from survey questions
   useEffect(() => {
+    console.log('LogicBuilder useEffect - survey:', survey);
+    console.log('LogicBuilder useEffect - questions:', survey.questions);
+    
     if (survey.flowData?.nodes && survey.flowData?.edges) {
       // Load existing flow data
+      console.log('Loading existing flow data');
       setNodes(survey.flowData.nodes);
       setEdges(survey.flowData.edges);
     } else {
       // Create initial flow from questions
+      console.log('Creating initial flow from questions');
       const initialNodes: Node[] = [
         {
           id: 'start',
@@ -70,7 +91,9 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
             id: `start-${question.id}`,
             source: 'start',
             target: question.id,
+            type: 'conditional',
             animated: true,
+            data: { conditions: [], operator: 'AND' }
           });
         }
 
@@ -95,7 +118,7 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
                 id: edgeId,
                 source: question.id,
                 target: targetId,
-                label: conditions.length > 0 ? '1 condition' : undefined,
+                type: 'conditional',
                 style: {
                   stroke: conditions.length > 0 ? '#F59E0B' : '#6366F1',
                   strokeWidth: 2
@@ -113,6 +136,8 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
             id: `${question.id}-${survey.questions[index + 1].id}`,
             source: question.id,
             target: survey.questions[index + 1].id,
+            type: 'conditional',
+            data: { conditions: [], operator: 'AND' }
           });
         }
       });
@@ -126,16 +151,30 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
       };
       initialNodes.push(endNode);
 
-      // Connect last question to end
+      // Connect last question to end, or connect start to end if no questions
       if (survey.questions.length > 0) {
         const lastQuestion = survey.questions[survey.questions.length - 1];
         initialEdges.push({
           id: `${lastQuestion.id}-end`,
           source: lastQuestion.id,
           target: 'end',
+          type: 'conditional',
+          data: { conditions: [], operator: 'AND' }
+        });
+      } else {
+        // No questions, connect start directly to end
+        initialEdges.push({
+          id: 'start-end',
+          source: 'start',
+          target: 'end',
+          type: 'conditional',
+          animated: true,
+          data: { conditions: [], operator: 'AND' }
         });
       }
 
+      console.log('Setting initial nodes:', initialNodes);
+      console.log('Setting initial edges:', initialEdges);
       setNodes(initialNodes);
       setEdges(initialEdges);
     }
@@ -151,6 +190,7 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
         target: params.target,
         sourceHandle: params.sourceHandle || undefined,
         targetHandle: params.targetHandle || undefined,
+        type: 'conditional',
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: '#6366F1',
@@ -159,6 +199,10 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
           stroke: '#6366F1',
           strokeWidth: 2,
         },
+        data: {
+          conditions: [],
+          operator: 'AND'
+        }
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
@@ -230,22 +274,165 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
     setSelectedSourceQuestion(null);
   };
 
+  // Save logic to parent
+  const handleSaveLogic = useCallback(() => {
+    // Convert React Flow nodes and edges to our format
+    const flowNodes: FlowNode[] = nodes.map(node => ({
+      id: node.id,
+      type: node.type || 'question',
+      position: node.position,
+      data: node.data,
+    }));
+
+    const flowEdges: FlowEdge[] = edges.map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      style: edge.style,
+      data: edge.data,
+    }));
+
+    onSave(flowNodes, flowEdges);
+  }, [nodes, edges, onSave]);
+
+  // Test mode handlers
+  const handleTestMode = () => {
+    if (isTestMode) {
+      // Exit test mode
+      setIsTestMode(false);
+      setTestPath([]);
+      // Reset node colors
+      setNodes(nodes => nodes.map(node => ({
+        ...node,
+        style: undefined
+      })));
+    } else {
+      // Enter test mode
+      setIsTestMode(true);
+      setTestPath(['start']);
+      // Highlight start node
+      setNodes(nodes => nodes.map(node => ({
+        ...node,
+        style: node.id === 'start' ? {
+          background: '#10b981',
+          color: 'white',
+          border: '2px solid #059669'
+        } : undefined
+      })));
+    }
+  };
+
+  // Drag handlers
+  const onNodeDragStart: NodeDragHandler = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const onNodeDragStop: NodeDragHandler = useCallback(() => {
+    setIsDragging(false);
+    handleSaveLogic();
+  }, [handleSaveLogic]);
+
+  console.log('LogicBuilder rendering with nodes:', nodes);
+  console.log('LogicBuilder rendering with edges:', edges);
+
+  // Check if we have at least one node
+  if (nodes.length === 0) {
+    console.warn('No nodes to render in LogicBuilder');
+  }
+
   return (
-    <div style={{ height: '600px', width: '100%', position: 'relative' }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onEdgeClick={onEdgeClick}
-        nodeTypes={nodeTypes}
-        fitView
-        style={{ background: 'var(--gray-50)' }}
-      >
-        <Background color="#E5E7EB" gap={16} />
-        <Controls />
-      </ReactFlow>
+    <div style={{ height: '600px', width: '100%', position: 'relative', backgroundColor: '#f3f4f6' }}>
+      {nodes.length === 0 ? (
+        <div style={{ 
+          height: '100%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          color: '#6b7280',
+          fontSize: '16px'
+        }}>
+          Loading flow diagram...
+        </div>
+      ) : (
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onEdgeClick={onEdgeClick}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDragStop={onNodeDragStop}
+          onNodeClick={(event, node) => {
+            if (isTestMode && node.type === 'question') {
+              // In test mode, clicking a question simulates selecting an answer
+              const connectedEdges = edges.filter(e => e.source === node.id);
+              if (connectedEdges.length > 0) {
+                // For simplicity, follow the first edge
+                const nextNodeId = connectedEdges[0].target;
+                setTestPath([...testPath, node.id, nextNodeId]);
+                
+                // Highlight the path
+                setNodes(nodes => nodes.map(n => ({
+                  ...n,
+                  style: [...testPath, node.id, nextNodeId].includes(n.id) ? {
+                    background: '#10b981',
+                    color: 'white',
+                    border: '2px solid #059669'
+                  } : undefined
+                })));
+              }
+            }
+          }}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          defaultEdgeOptions={{
+            type: 'conditional',
+            animated: true,
+            style: {
+              strokeWidth: 2,
+              stroke: '#6366f1',
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#6366f1',
+            },
+          }}
+          style={{ background: '#f9fafb', width: '100%', height: '100%' }}
+        >
+          <Background color="#E5E7EB" gap={16} />
+          <Controls />
+          <MiniMap 
+            nodeColor={(node) => {
+              if (node.type === 'start') return '#10b981';
+              if (node.type === 'end') return '#ef4444';
+              if (node.selected) return '#6366f1';
+              return '#94a3b8';
+            }}
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              border: '1px solid #e5e7eb',
+            }}
+          />
+          <Panel position="top-left" style={{ margin: '10px' }}>
+            <div style={{
+              background: 'white',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              fontSize: '13px',
+              fontWeight: '500',
+              color: '#6b7280',
+            }}>
+              {isDragging ? '🔄 Repositioning...' : '📍 Drag nodes to reposition'}
+            </div>
+          </Panel>
+        </ReactFlow>
+      )}
 
       {/* Toolbar */}
       <motion.div
@@ -266,7 +453,32 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
         }}
       >
         <button
-          onClick={handleSave}
+          onClick={handleTestMode}
+          style={{
+            background: isTestMode ? '#ef4444' : '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            marginRight: '8px',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = `0 4px 12px ${isTestMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          {isTestMode ? '🛑 Exit Test' : '🧪 Test Flow'}
+        </button>
+        
+        <button
+          onClick={handleSaveLogic}
           style={{
             background: 'var(--primary)',
             color: 'white',
@@ -292,7 +504,7 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
         <div style={{ height: '24px', width: '1px', background: 'var(--gray-200)' }} />
         
         <span style={{ fontSize: '12px', color: 'var(--gray-600)' }}>
-          Drag to connect • Click edges to add conditions
+          {isTestMode ? 'Click questions to simulate survey flow' : 'Drag to connect • Click edges to add conditions'}
         </span>
       </motion.div>
 
@@ -309,6 +521,15 @@ const LogicBuilder = ({ survey, onSave }: LogicBuilderProps) => {
         initialOperator={selectedEdge?.data?.operator || 'AND'}
       />
     </div>
+  );
+};
+
+// Main component that provides ReactFlowProvider
+const LogicBuilder = (props: LogicBuilderProps) => {
+  return (
+    <ReactFlowProvider>
+      <LogicBuilderInner {...props} />
+    </ReactFlowProvider>
   );
 };
 
