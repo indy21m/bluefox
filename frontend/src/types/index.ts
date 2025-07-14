@@ -4,6 +4,7 @@ export * from './survey';
 export * from './convertkit';
 export * from './auth';
 export * from './api';
+export * from './theme';
 
 // Common utility types
 export type UUID = string;

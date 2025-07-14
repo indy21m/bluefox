@@ -104,6 +104,7 @@ export interface Survey {
     nodes: FlowNode[];
     edges: FlowEdge[];
   };
+  themeId?: string;
 }
 
 // Survey configuration settings

@@ -5,7 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConvertKit } from '../contexts/ConvertKitContext';
 import LogicBuilder from '../components/logic-builder/LogicBuilder';
-import type { Survey, Question, AnswerOption, ConditionalLogic, FlowNode, FlowEdge } from '../types';
+import ThemeEditor from '../components/theme-builder/ThemeEditor';
+import type { Survey, Question, AnswerOption, ConditionalLogic, FlowNode, FlowEdge, SurveyTheme } from '../types';
 import { demoSurvey } from '../data/demoSurvey';
 
 const SurveyEditorPage = () => {
@@ -23,6 +24,7 @@ const SurveyEditorPage = () => {
   const [showLogicBuilder, setShowLogicBuilder] = useState(false);
   const [draggedQuestion, setDraggedQuestion] = useState<string | null>(null);
   const [draggedOption, setDraggedOption] = useState<string | null>(null);
+  const [showThemeEditor, setShowThemeEditor] = useState(false);
 
   useEffect(() => {
     if (surveyId) {
@@ -327,6 +329,17 @@ const SurveyEditorPage = () => {
     showToast('Logic flow saved!', 'success');
   };
 
+  const handleSaveTheme = (theme: SurveyTheme) => {
+    // Save theme and associate with survey
+    setSurvey({
+      ...survey,
+      themeId: theme.id
+    });
+    setShowThemeEditor(false);
+    showToast('Theme saved successfully!', 'success');
+    handleSaveSurvey();
+  };
+
   return (
     <div className="min-h-screen w-full">
       <Header 
@@ -503,6 +516,13 @@ const SurveyEditorPage = () => {
                       🔍 Test
                     </Button>
                   </Link>
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => setShowThemeEditor(true)}
+                  >
+                    🎨 Theme
+                  </Button>
                   <Button 
                     variant="secondary" 
                     size="sm"
@@ -1418,6 +1438,15 @@ const SurveyEditorPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Theme Editor Modal */}
+      {showThemeEditor && surveyId && (
+        <ThemeEditor
+          surveyId={surveyId}
+          onSave={handleSaveTheme}
+          onClose={() => setShowThemeEditor(false)}
+        />
       )}
     </div>
   );
