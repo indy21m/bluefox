@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Header, Button, GlassCard, ProgressBar } from '../components/common';
+import { Header, GlassCard, ProgressBar } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConvertKit } from '../contexts/ConvertKitContext';
@@ -108,9 +108,9 @@ const AnalyticsPage = () => {
             <span className="text-sm text-gray-600">
               Welcome, {user?.name || user?.email}
             </span>
-            <Button variant="secondary" size="sm" onClick={handleLogout}>
+            <button className="btn btn-secondary" onClick={handleLogout}>
               Logout
-            </Button>
+            </button>
           </div>
         }
       />
@@ -120,12 +120,14 @@ const AnalyticsPage = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h1 className="h1">Analytics Dashboard</h1>
             <div className="flex gap-md">
-              <Link to="/admin">
-                <Button variant="secondary">← Back to Dashboard</Button>
+              <Link to="/">
+                <button className="btn btn-secondary">
+                  <span>← Back to Dashboard</span>
+                </button>
               </Link>
-              <Button variant="primary" onClick={() => showToast('Export functionality coming soon!', 'info')}>
-                Export Data
-              </Button>
+              <button className="btn btn-primary" onClick={() => showToast('Export functionality coming soon!', 'info')}>
+                <span>Export Data</span>
+              </button>
             </div>
           </div>
           <p className="text-lg text-gray-600">
@@ -236,7 +238,9 @@ const AnalyticsPage = () => {
             </div>
             
             <Link to="/admin/surveys">
-              <Button variant="secondary">Manage Surveys</Button>
+              <button className="btn btn-secondary">
+                <span>Manage Surveys</span>
+              </button>
             </Link>
           </GlassCard>
 
@@ -285,15 +289,15 @@ const AnalyticsPage = () => {
             <div className="grid gap-md">
               {surveys.length > 0 && (
                 <Link to={`/survey/${surveys[0].slug || surveys[0].id}`}>
-                  <Button variant="primary" style={{ width: '100%' }}>
-                    Test a Survey
-                  </Button>
+                  <button className="btn btn-primary" style={{ width: '100%' }}>
+                    <span>Test a Survey</span>
+                  </button>
                 </Link>
               )}
               <Link to="/admin/surveys">
-                <Button variant="secondary" style={{ width: '100%' }}>
-                  Create New Survey
-                </Button>
+                <button className="btn btn-secondary" style={{ width: '100%' }}>
+                  <span>Create New Survey</span>
+                </button>
               </Link>
             </div>
           </GlassCard>
@@ -336,7 +340,9 @@ const AnalyticsPage = () => {
             
             <div style={{ marginTop: '20px' }}>
               <Link to="/admin/convertkit">
-                <Button variant="success">Setup ConvertKit Integration</Button>
+                <button className="btn btn-success">
+                  <span>Setup ConvertKit Integration</span>
+                </button>
               </Link>
             </div>
           </GlassCard>

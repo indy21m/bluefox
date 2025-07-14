@@ -1,14 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ConvertKitProvider } from './contexts/ConvertKitContext';
 import { ProtectedRoute } from './components/auth';
-import { HomePage, SurveyPage, AdminPage, LoginPage } from './pages';
+import { SurveyPage, AdminPage, LoginPage } from './pages';
 import SurveyBuilderPage from './pages/SurveyBuilderPage';
+import IntegrationsPage from './pages/IntegrationsPage';
 import ConvertKitSetupPage from './pages/ConvertKitSetupPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SurveyEditorPage from './pages/SurveyEditorPage';
 import SurveyAnalyticsPage from './pages/SurveyAnalyticsPage';
+import ThemesPage from './pages/ThemesPage';
 
 function App() {
   return (
@@ -17,18 +19,19 @@ function App() {
         <ConvertKitProvider>
           <Router>
           <Routes>
-          <Route path="/" element={<HomePage />} />
+          {/* Redirect root to admin dashboard */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <AdminPage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Public survey route */}
           <Route path="/survey/:surveyId" element={<SurveyPage />} />
+          
+          {/* Admin routes */}
           <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute>
-                <AdminPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/surveys" 
+            path="/surveys" 
             element={
               <ProtectedRoute>
                 <SurveyBuilderPage />
@@ -36,7 +39,15 @@ function App() {
             } 
           />
           <Route 
-            path="/admin/convertkit" 
+            path="/integrations" 
+            element={
+              <ProtectedRoute>
+                <IntegrationsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/integrations/convertkit" 
             element={
               <ProtectedRoute>
                 <ConvertKitSetupPage />
@@ -44,7 +55,7 @@ function App() {
             } 
           />
           <Route 
-            path="/admin/analytics" 
+            path="/analytics" 
             element={
               <ProtectedRoute>
                 <AnalyticsPage />
@@ -52,7 +63,7 @@ function App() {
             } 
           />
           <Route 
-            path="/admin/surveys/edit/:surveyId" 
+            path="/surveys/edit/:surveyId" 
             element={
               <ProtectedRoute>
                 <SurveyEditorPage />
@@ -60,13 +71,23 @@ function App() {
             } 
           />
           <Route 
-            path="/admin/surveys/:surveyId/analytics" 
+            path="/surveys/:surveyId/analytics" 
             element={
               <ProtectedRoute>
                 <SurveyAnalyticsPage />
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/themes" 
+            element={
+              <ProtectedRoute>
+                <ThemesPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Auth route */}
           <Route 
             path="/login" 
             element={
@@ -75,7 +96,9 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route path="*" element={<HomePage />} />
+          
+          {/* Catch all - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
         </ConvertKitProvider>

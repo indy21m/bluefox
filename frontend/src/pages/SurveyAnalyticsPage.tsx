@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Header, Button, GlassCard, ProgressBar } from '../components/common';
+import { Header, GlassCard, ProgressBar } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import {
@@ -156,10 +156,10 @@ const SurveyAnalyticsPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="h3">No analytics data available</div>
-          <Link to="/admin/surveys">
-            <Button variant="primary" style={{ marginTop: '20px' }}>
-              Back to Surveys
-            </Button>
+          <Link to="/surveys">
+            <button className="btn btn-primary" style={{ marginTop: '20px' }}>
+              <span>Back to Surveys</span>
+            </button>
           </Link>
         </div>
       </div>
@@ -174,9 +174,9 @@ const SurveyAnalyticsPage = () => {
             <span className="text-sm text-gray-600">
               Welcome, {user?.name || user?.email}
             </span>
-            <Button variant="secondary" size="sm" onClick={handleLogout}>
+            <button className="btn btn-secondary" onClick={handleLogout}>
               Logout
-            </Button>
+            </button>
           </div>
         }
       />
@@ -191,12 +191,14 @@ const SurveyAnalyticsPage = () => {
               </p>
             </div>
             <div className="flex gap-md">
-              <Link to={`/admin/surveys/edit/${surveyId}`}>
-                <Button variant="secondary">← Back to Editor</Button>
+              <Link to={`/surveys/edit/${surveyId}`}>
+                <button className="btn btn-secondary">
+                  <span>← Back to Editor</span>
+                </button>
               </Link>
-              <Button variant="primary" onClick={exportToCSV}>
-                Export CSV
-              </Button>
+              <button className="btn btn-primary" onClick={exportToCSV}>
+                <span>Export CSV</span>
+              </button>
             </div>
           </div>
         </div>
@@ -415,13 +417,12 @@ const SurveyAnalyticsPage = () => {
                         {new Date(response.completedAt).toLocaleString()}
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <Button 
-                          variant="secondary" 
-                          size="sm"
+                        <button 
+                          className="btn btn-secondary"
                           onClick={() => showToast('Response details coming soon!', 'info')}
                         >
-                          View Details
-                        </Button>
+                          <span>View Details</span>
+                        </button>
                       </td>
                     </tr>
                   ))

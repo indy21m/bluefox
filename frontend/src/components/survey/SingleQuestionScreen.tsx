@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Question, AnswerOption, Answer } from '../../types';
-import { Button, Input, GlassCard, ProgressBar } from '../common';
+import type { Question, AnswerOption, Answer, SurveyTheme } from '../../types';
+import { Input, GlassCard, ProgressBar, Button } from '../common';
 
 interface SingleQuestionScreenProps {
   question: Question;
@@ -11,6 +11,7 @@ interface SingleQuestionScreenProps {
   showProgressBar?: boolean;
   allowBackNavigation?: boolean;
   onBack?: () => void;
+  theme?: SurveyTheme | null;
 }
 
 const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
@@ -21,11 +22,35 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
   autoAdvanceDelay = 500,
   showProgressBar = true,
   allowBackNavigation = false,
-  onBack
+  onBack,
+  theme
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | number | boolean>('');
   const [isAnswered, setIsAnswered] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
+
+  // Theme helper functions
+  const getTransitionDuration = () => {
+    if (!theme) return '300ms';
+    switch (theme.style.transitionSpeed) {
+      case 'instant': return '0ms';
+      case 'fast': return '150ms';
+      case 'normal': return '300ms';
+      case 'slow': return '500ms';
+      default: return '300ms';
+    }
+  };
+
+  const getBoxShadow = () => {
+    if (!theme) return '0 4px 12px rgba(0, 0, 0, 0.1)';
+    switch (theme.style.boxShadow) {
+      case 'none': return 'none';
+      case 'subtle': return '0 2px 4px rgba(0, 0, 0, 0.06)';
+      case 'medium': return '0 4px 12px rgba(0, 0, 0, 0.1)';
+      case 'strong': return '0 8px 24px rgba(0, 0, 0, 0.15)';
+      default: return '0 4px 12px rgba(0, 0, 0, 0.1)';
+    }
+  };
 
   useEffect(() => {
     // Reset state when question changes
@@ -63,25 +88,74 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ padding: '20px' }}>
-      <div style={{ width: '100%', maxWidth: '600px' }}>
+    <div 
+      className="min-h-screen flex items-center justify-center" 
+      style={{ 
+        padding: '20px',
+        backgroundColor: theme?.colors.background || '#FFFFFF',
+        fontFamily: theme?.typography.fontFamily || 'Inter, system-ui, sans-serif',
+        lineHeight: theme?.typography.lineHeight || 1.6,
+        color: theme?.colors.textOnBackground || '#1A1A1A',
+      }}
+    >
+      <div style={{ 
+        width: '100%', 
+        maxWidth: theme?.structure.formMaxWidth ? `${theme.structure.formMaxWidth}px` : '600px' 
+      }}>
         {showProgressBar && (
           <div style={{ marginBottom: '30px' }}>
-            <ProgressBar 
-              value={progress} 
-              large 
-              showPercentage={false}
-            />
+            <div
+              style={{
+                height: '8px',
+                backgroundColor: theme?.colors.borderColor || '#E5E7EB',
+                borderRadius: '4px',
+                overflow: 'hidden',
+                opacity: 0.6
+              }}
+            >
+              <div
+                style={{
+                  width: `${progress}%`,
+                  height: '100%',
+                  backgroundColor: theme?.colors.primaryAccent || '#6366F1',
+                  transition: `width ${getTransitionDuration()} ease`,
+                }}
+              />
+            </div>
           </div>
         )}
 
-        <GlassCard>
+        <div
+          style={{
+            backgroundColor: theme?.colors.background === '#1F2937' 
+              ? 'rgba(31, 41, 55, 0.95)' 
+              : 'rgba(255, 255, 255, 0.98)',
+            borderRadius: `${theme?.structure.widgetBorderRadius || 16}px`,
+            border: `${theme?.structure.widgetBorderWidth || 1}px solid ${theme?.colors.borderColor || '#E5E7EB'}`,
+            padding: '32px',
+            boxShadow: getBoxShadow(),
+            backdropFilter: 'blur(10px)',
+          }}
+        >
           <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <h2 className="h2" style={{ marginBottom: '16px' }}>
+            <h2 
+              style={{ 
+                marginBottom: '16px',
+                fontSize: `${theme?.typography.fontSize.headline || 28}px`,
+                fontWeight: 700,
+                color: theme?.colors.textOnBackground || '#1A1A1A',
+              }}
+            >
               {question.title}
             </h2>
             {question.description && (
-              <p className="text-lg text-gray-600">
+              <p 
+                style={{
+                  fontSize: `${theme?.typography.fontSize.description || 16}px`,
+                  color: theme?.colors.textOnBackground || '#1A1A1A',
+                  opacity: 0.8,
+                }}
+              >
                 {question.description}
               </p>
             )}
@@ -89,24 +163,38 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
 
           <div className="fade-in">
             {question.type === 'multiple_choice' && question.options && (
-              <div className="grid gap-md">
-                {question.options.map((option: AnswerOption) => (
+              <div style={{ 
+                display: 'grid',
+                gap: `${theme?.structure.gapBetweenButtons || 12}px`,
+              }}>
+                {question.options.map((option: AnswerOption, index: number) => (
                   <button
                     key={option.id}
-                    className={`glass-card ${isAnswered && selectedAnswer === option.value ? 'glass-card-dark' : ''}`}
                     style={{
                       padding: '20px',
+                      fontSize: `${theme?.typography.fontSize.answerOption || 16}px`,
+                      fontWeight: 'medium',
+                      backgroundColor: isAnswered && selectedAnswer === option.value
+                        ? theme?.colors.buttonColor || '#6366F1'
+                        : theme?.colors.background === '#1F2937' 
+                          ? 'rgba(55, 65, 81, 0.8)' 
+                          : 'rgba(255, 255, 255, 0.9)',
+                      color: isAnswered && selectedAnswer === option.value
+                        ? theme?.colors.textOnButtons || '#FFFFFF'
+                        : theme?.colors.textOnBackground || '#1A1A1A',
+                      border: `1px solid ${theme?.colors.borderColor || '#E5E7EB'}`,
+                      borderRadius: `${theme?.structure.buttonBorderRadius || 8}px`,
                       textAlign: 'left',
-                      border: 'none',
                       cursor: isAnswered ? 'default' : 'pointer',
-                      transition: 'all 0.3s ease',
+                      transition: `all ${getTransitionDuration()} ease`,
                       opacity: isAnswered ? 0.7 : 1,
-                      transform: isAnswered && selectedAnswer === option.value ? 'scale(1.02)' : 'scale(1)'
+                      transform: isAnswered && selectedAnswer === option.value ? 'scale(1.02)' : 'scale(1)',
+                      backdropFilter: 'blur(10px)',
                     }}
                     onClick={() => handleAnswer(option.value, option.id)}
                     disabled={isAnswered}
                   >
-                    <span className="text-lg font-medium">{option.text}</span>
+                    <span style={{ fontSize: '18px', fontWeight: 'medium' }}>{option.text}</span>
                   </button>
                 ))}
               </div>
@@ -331,8 +419,20 @@ const SingleQuestionScreen: React.FC<SingleQuestionScreenProps> = ({
               </p>
             </div>
           )}
-        </GlassCard>
+        </div>
       </div>
+
+      {/* Custom CSS for animations */}
+      <style>{`
+        .fade-in {
+          animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

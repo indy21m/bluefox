@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { Survey, Question, Answer, SurveyResponse, SurveySession } from '../../types';
+import { useState, useEffect } from 'react';
+import type { Survey, Question, Answer, SurveyResponse, SurveySession, SurveyTheme } from '../../types';
+import { defaultThemes } from '../../types/theme';
 import SingleQuestionScreen from './SingleQuestionScreen';
 import SurveyComplete from './SurveyComplete';
 
@@ -83,6 +84,48 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
     sortedQuestions.findIndex(q => q.id === startQuestionId)
   );
+
+  // Theme state
+  const [theme, setTheme] = useState<SurveyTheme | null>(null);
+
+  // Load theme when survey changes
+  useEffect(() => {
+    if (survey.themeId) {
+      // Try to load saved theme
+      const savedTheme = localStorage.getItem(`bluefox_theme_${survey.themeId}`);
+      if (savedTheme) {
+        try {
+          const parsedTheme = JSON.parse(savedTheme);
+          setTheme(parsedTheme);
+          return;
+        } catch (error) {
+          console.error('Failed to load survey theme:', error);
+        }
+      }
+      
+      // Fallback to survey-specific theme storage
+      const surveyTheme = localStorage.getItem(`bluefox_theme_${survey.id}`);
+      if (surveyTheme) {
+        try {
+          const parsedTheme = JSON.parse(surveyTheme);
+          setTheme(parsedTheme);
+          return;
+        } catch (error) {
+          console.error('Failed to load survey theme:', error);
+        }
+      }
+    }
+    
+    // Default to plain theme
+    setTheme({
+      id: 'default',
+      name: 'Plain',
+      isCustom: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...defaultThemes.plain,
+    } as SurveyTheme);
+  }, [survey.themeId, survey.id]);
 
   const getCurrentQuestion = (): Question | null => {
     return survey.questions.find(q => q.id === session.currentQuestionId) || null;
@@ -352,6 +395,7 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
       showProgressBar={survey.settings.showProgressBar}
       allowBackNavigation={survey.settings.allowBackNavigation}
       onBack={survey.settings.allowBackNavigation ? handleBack : undefined}
+      theme={theme}
     />
   );
 };

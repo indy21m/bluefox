@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../common';
 import type { Condition, Question } from '../../types';
 
 interface ConditionEditorProps {
@@ -333,14 +332,13 @@ const ConditionEditor = ({
                 ))}
               </div>
 
-              <Button
-                variant="secondary"
-                size="sm"
+              <button
+                className="btn btn-secondary"
                 onClick={handleAddCondition}
                 style={{ marginTop: '12px' }}
               >
-                + Add Condition
-              </Button>
+                <span>+ Add Condition</span>
+              </button>
             </div>
 
             {/* Actions */}
@@ -352,12 +350,12 @@ const ConditionEditor = ({
               paddingTop: '24px',
               borderTop: '1px solid var(--gray-200)'
             }}>
-              <Button variant="secondary" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={handleSave}>
-                Save Conditions
-              </Button>
+              <button className="btn btn-secondary" onClick={onClose}>
+                <span>Cancel</span>
+              </button>
+              <button className="btn btn-primary" onClick={handleSave}>
+                <span>Save Conditions</span>
+              </button>
             </div>
           </motion.div>
         </>

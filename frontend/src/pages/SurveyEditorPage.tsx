@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Header, Button, GlassCard, Input } from '../components/common';
+import { Header, GlassCard, Input } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConvertKit } from '../contexts/ConvertKitContext';
@@ -46,7 +46,7 @@ const SurveyEditorPage = () => {
             }
           } else {
             showToast('Failed to load survey', 'error');
-            navigate('/admin/surveys');
+            navigate('/surveys');
           }
         }
       } else {
@@ -59,7 +59,7 @@ const SurveyEditorPage = () => {
           }
         } else {
           showToast('Survey not found', 'error');
-          navigate('/admin/surveys');
+          navigate('/surveys');
         }
       }
     }
@@ -348,9 +348,9 @@ const SurveyEditorPage = () => {
             <span className="text-sm text-gray-600">
               Welcome, {user?.name || user?.email}
             </span>
-            <Button variant="secondary" size="sm" onClick={handleLogout}>
+            <button className="btn btn-secondary" onClick={handleLogout}>
               Logout
-            </Button>
+            </button>
           </div>
         }
       />
@@ -508,32 +508,33 @@ const SurveyEditorPage = () => {
                   </div>
                 </div>
                 <div className="flex gap-sm" style={{ flexShrink: 0 }}>
-                  <Link to="/admin/surveys">
-                    <Button variant="secondary" size="sm">← Back</Button>
+                  <Link to="/surveys">
+                    <button className="btn btn-secondary">
+                      <span>← Back</span>
+                    </button>
                   </Link>
                   <Link to={`/survey/${survey.slug || surveyId}`} target="_blank">
-                    <Button variant="secondary" size="sm">
-                      🔍 Test
-                    </Button>
+                    <button className="btn btn-secondary">
+                      <span>🔍 Test</span>
+                    </button>
                   </Link>
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
+                  <button 
+                    className="btn btn-secondary"
                     onClick={() => setShowThemeEditor(true)}
                   >
-                    🎨 Theme
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
+                    <span>🎨 Theme</span>
+                  </button>
+                  <button 
+                    className={`btn btn-secondary ${isSaving ? 'loading' : ''}`}
                     onClick={handleSaveSurvey}
-                    loading={isSaving}
+                    disabled={isSaving}
                   >
-                    {isSaving ? '...' : '💾'}
-                  </Button>
-                  <Button variant="primary" size="sm" onClick={handleAddQuestion}>
-                    + Add
-                  </Button>
+                    {isSaving && <div className="loading-spinner"></div>}
+                    <span>{isSaving ? '...' : '💾'}</span>
+                  </button>
+                  <button className="btn btn-primary" onClick={handleAddQuestion}>
+                    <span>+ Add</span>
+                  </button>
                 </div>
               </div>
               
@@ -682,9 +683,8 @@ const SurveyEditorPage = () => {
                   </div>
                   
                   {/* Delete Question Button */}
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
+                  <button 
+                    className="btn btn-secondary"
                     onClick={() => handleDeleteQuestion(selectedQuestion.id)}
                     style={{ 
                       color: 'var(--error)', 
@@ -693,8 +693,8 @@ const SurveyEditorPage = () => {
                       flexShrink: 0
                     }}
                   >
-                    🗑️ Delete Question
-                  </Button>
+                    <span>🗑️ Delete Question</span>
+                  </button>
                 </div>
 
                 {/* Tab Content */}
@@ -898,9 +898,8 @@ const SurveyEditorPage = () => {
                             </div>
                           ))}
                           </div>
-                          <Button
-                            variant="secondary"
-                            size="sm"
+                          <button
+                            className="btn btn-secondary"
                             onClick={() => {
                               const newOption: AnswerOption = {
                                 id: `option_${Date.now()}`,
@@ -916,8 +915,8 @@ const SurveyEditorPage = () => {
                               marginTop: '12px'
                             }}
                           >
-                            + Add Option
-                          </Button>
+                            <span>+ Add Option</span>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -969,8 +968,10 @@ const SurveyEditorPage = () => {
                         <div className="text-sm text-gray-500" style={{ marginBottom: '20px' }}>
                           Set up your ConvertKit connection to map survey responses to custom fields
                         </div>
-                        <Link to="/admin/convertkit">
-                          <Button variant="primary">Setup ConvertKit Connection</Button>
+                        <Link to="/integrations/convertkit">
+                          <button className="btn btn-primary">
+                            <span>Setup ConvertKit Connection</span>
+                          </button>
                         </Link>
                       </div>
                     ) : (
@@ -1086,13 +1087,12 @@ const SurveyEditorPage = () => {
                           Show different questions based on the answer to this question
                         </p>
                       </div>
-                      <Button 
-                        variant="secondary" 
-                        size="sm"
+                      <button 
+                        className="btn btn-secondary"
                         onClick={handleAddLogicRule}
                       >
-                        + Add Logic Rule
-                      </Button>
+                        <span>+ Add Logic Rule</span>
+                      </button>
                     </div>
                     
                     {selectedQuestion.conditionalLogic && selectedQuestion.conditionalLogic.length > 0 ? (
@@ -1252,13 +1252,13 @@ const SurveyEditorPage = () => {
                   <p className="text-gray-600">
                     Select a question from the list or create a new one to start editing
                   </p>
-                  <Button 
-                    variant="primary" 
+                  <button 
+                    className="btn btn-primary"
                     onClick={handleAddQuestion}
                     style={{ marginTop: '20px' }}
                   >
-                    Create First Question
-                  </Button>
+                    <span>Create First Question</span>
+                  </button>
                 </div>
               </GlassCard>
             )}
@@ -1429,12 +1429,12 @@ const SurveyEditorPage = () => {
               Are you sure you want to delete this question? This action cannot be undone.
             </p>
             <div className="flex gap-md" style={{ justifyContent: 'center' }}>
-              <Button variant="secondary" onClick={cancelDeleteQuestion}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={confirmDeleteQuestion} style={{ backgroundColor: 'var(--error)' }}>
-                Delete Question
-              </Button>
+              <button className="btn btn-secondary" onClick={cancelDeleteQuestion}>
+                <span>Cancel</span>
+              </button>
+              <button className="btn btn-primary" onClick={confirmDeleteQuestion} style={{ backgroundColor: 'var(--error)' }}>
+                <span>Delete Question</span>
+              </button>
             </div>
           </div>
         </div>

@@ -26,8 +26,7 @@ const Header: React.FC<HeaderProps> = ({
         margin: 0
       }}>
         <div className="logo">
-          <img src="/logo.png" alt="BlueFox Logo" />
-          <Link to="/">BlueFox</Link>
+          <span className="gradient-text text-2xl font-bold">🦊 BlueFox</span>
         </div>
         
         <div className="flex items-center gap-lg">

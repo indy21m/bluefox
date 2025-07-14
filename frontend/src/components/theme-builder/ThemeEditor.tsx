@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight, Monitor, Tablet, Smartphone } from 'lucide-react';
-import type { SurveyTheme, ThemePreset } from '../../types';
+import type { SurveyTheme, ThemePreset, Survey } from '../../types';
 import { defaultThemes } from '../../types/theme';
 import ThemePreview from './ThemePreview';
 import ColorPicker from './ColorPicker';
 import { checkContrastRatio } from '../../utils/accessibility';
 
 interface ThemeEditorProps {
-  surveyId: string;
-  onSave: (theme: SurveyTheme) => void;
-  onClose: () => void;
+  surveyId?: string;
+  onSave?: (theme: SurveyTheme) => void;
+  onClose?: () => void;
+  inline?: boolean;
 }
 
-const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
+const ThemeEditor = ({ surveyId = 'default', onSave, onClose, inline = false }: ThemeEditorProps) => {
   const [activeTheme, setActiveTheme] = useState<SurveyTheme>(() => {
     // Load saved theme or use default
     const savedTheme = localStorage.getItem(`bluefox_theme_${surveyId}`);
@@ -35,6 +36,38 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['theme', 'structure']));
   const [selectedPreset, setSelectedPreset] = useState<ThemePreset>('plain');
   const [isDirty, setIsDirty] = useState(false);
+  const [survey, setSurvey] = useState<Survey | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [customPresetName, setCustomPresetName] = useState('');
+  const [savedPresets, setSavedPresets] = useState<SurveyTheme[]>([]);
+
+  // Load survey data
+  useEffect(() => {
+    if (surveyId && surveyId !== 'default') {
+      const savedSurvey = localStorage.getItem(`bluefox_survey_${surveyId}`);
+      if (savedSurvey) {
+        try {
+          const parsedSurvey = JSON.parse(savedSurvey);
+          setSurvey(parsedSurvey);
+        } catch (error) {
+          console.error('Failed to load survey for theme preview:', error);
+        }
+      }
+    }
+  }, [surveyId]);
+
+  // Load saved custom presets
+  useEffect(() => {
+    const savedPresetsData = localStorage.getItem('bluefox_custom_presets');
+    if (savedPresetsData) {
+      try {
+        const presets = JSON.parse(savedPresetsData);
+        setSavedPresets(presets);
+      } catch (error) {
+        console.error('Failed to load custom presets:', error);
+      }
+    }
+  }, []);
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -124,8 +157,41 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
     };
     
     localStorage.setItem(`bluefox_theme_${surveyId}`, JSON.stringify(themeToSave));
-    onSave(themeToSave);
+    if (onSave) {
+      onSave(themeToSave);
+    }
     setIsDirty(false);
+  };
+
+  const handleSaveAsPreset = () => {
+    if (!customPresetName.trim()) return;
+    
+    const newPreset: SurveyTheme = {
+      ...activeTheme,
+      id: `preset_${Date.now()}`,
+      name: customPresetName.trim(),
+      isCustom: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    const updatedPresets = [...savedPresets, newPreset];
+    setSavedPresets(updatedPresets);
+    localStorage.setItem('bluefox_custom_presets', JSON.stringify(updatedPresets));
+    
+    setShowSaveDialog(false);
+    setCustomPresetName('');
+    setSelectedPreset('custom');
+  };
+
+  const applyCustomPreset = (preset: SurveyTheme) => {
+    setActiveTheme(prev => ({
+      ...preset,
+      id: prev.id, // Keep the current theme ID
+      updatedAt: new Date(),
+    }));
+    setSelectedPreset('custom');
+    setIsDirty(true);
   };
 
   const fonts = [
@@ -141,72 +207,88 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
     'Raleway, sans-serif',
   ];
 
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        style={{
-          width: '90vw',
-          height: '90vh',
-          maxWidth: '1400px',
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
-        }}
-      >
+  const containerStyle = inline ? {
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column' as const,
+  } : {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1000,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
+  const editorStyle = inline ? {
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column' as const,
+  } : {
+    width: '90vw',
+    height: '90vh',
+    maxWidth: '1400px',
+    backgroundColor: 'white',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+  };
+
+  const content = (
+    <div style={editorStyle} className={inline ? 'glass-card' : ''}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid var(--gray-200)',
+          borderBottom: inline ? 'none' : '1px solid var(--gray-200)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
           <h2 className="h3">Visual Theme Editor</h2>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={onClose}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="btn btn-primary"
-              style={{
-                position: 'relative',
-              }}
-            >
-              Save Theme
-              {isDirty && (
-                <span style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  width: 8,
-                  height: 8,
-                  backgroundColor: 'var(--error)',
-                  borderRadius: '50%',
-                }} />
+          {!inline && (
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="btn btn-secondary"
+                >
+                  <span>Cancel</span>
+                </button>
               )}
-            </button>
-          </div>
+              <button
+                onClick={handleSave}
+                className="btn btn-primary"
+                style={{
+                  position: 'relative',
+                }}
+              >
+                <span>Save Theme</span>
+                {isDirty && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    width: 8,
+                    height: 8,
+                    backgroundColor: 'var(--error)',
+                    borderRadius: '50%',
+                  }} />
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
@@ -240,18 +322,46 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
                     exit={{ height: 0, opacity: 0 }}
                     className="section-content"
                   >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      {(['plain', 'modern', 'dark', 'custom'] as ThemePreset[]).map(preset => (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+                      {(['plain', 'modern', 'dark'] as ThemePreset[]).map(preset => (
                         <button
                           key={preset}
-                          onClick={() => preset !== 'custom' && applyPreset(preset)}
+                          onClick={() => applyPreset(preset)}
                           className={`theme-preset ${selectedPreset === preset ? 'active' : ''}`}
-                          disabled={preset === 'custom' && !activeTheme.isCustom}
                         >
                           {preset.charAt(0).toUpperCase() + preset.slice(1)}
                         </button>
                       ))}
                     </div>
+
+                    {/* Custom Presets */}
+                    {savedPresets.length > 0 && (
+                      <>
+                        <div style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--gray-700)' }}>
+                          Custom Presets
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+                          {savedPresets.map(preset => (
+                            <button
+                              key={preset.id}
+                              onClick={() => applyCustomPreset(preset)}
+                              className={`theme-preset ${activeTheme.name === preset.name ? 'active' : ''}`}
+                            >
+                              {preset.name}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Save as Preset Button */}
+                    <button
+                      onClick={() => setShowSaveDialog(true)}
+                      className="btn btn-secondary"
+                      style={{ width: '100%', fontSize: '14px' }}
+                    >
+                      <span>💾 Save as Custom Preset</span>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -515,6 +625,74 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
               </AnimatePresence>
             </div>
 
+            {/* Survey Settings Section */}
+            {survey && (
+              <div className="editor-section">
+                <button
+                  onClick={() => toggleSection('survey-settings')}
+                  className="section-header"
+                >
+                  {expandedSections.has('survey-settings') ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  <span>Survey Settings</span>
+                </button>
+                
+                <AnimatePresence>
+                  {expandedSections.has('survey-settings') && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="section-content"
+                    >
+                      <div className="control-group">
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={survey.settings.showProgressBar}
+                            onChange={(e) => {
+                              const updatedSurvey = {
+                                ...survey,
+                                settings: {
+                                  ...survey.settings,
+                                  showProgressBar: e.target.checked
+                                }
+                              };
+                              setSurvey(updatedSurvey);
+                              localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(updatedSurvey));
+                            }}
+                            style={{ marginRight: '8px' }}
+                          />
+                          Show Progress Bar
+                        </label>
+                      </div>
+
+                      <div className="control-group">
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={survey.settings.allowBackNavigation}
+                            onChange={(e) => {
+                              const updatedSurvey = {
+                                ...survey,
+                                settings: {
+                                  ...survey.settings,
+                                  allowBackNavigation: e.target.checked
+                                }
+                              };
+                              setSurvey(updatedSurvey);
+                              localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(updatedSurvey));
+                            }}
+                            style={{ marginRight: '8px' }}
+                          />
+                          Show Back Button
+                        </label>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
             {/* Custom CSS Section */}
             <div className="editor-section">
               <button
@@ -597,11 +775,76 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
               <ThemePreview
                 theme={activeTheme}
                 mode={previewMode}
+                survey={survey}
               />
             </div>
           </div>
         </div>
-      </motion.div>
+
+        {/* Save Preset Dialog */}
+        {showSaveDialog && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            }}>
+              <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: '600' }}>
+                Save Custom Preset
+              </h3>
+              <p style={{ marginBottom: '20px', fontSize: '14px', color: 'var(--gray-600)' }}>
+                Give your custom theme a name to save it as a reusable preset.
+              </p>
+              <input
+                type="text"
+                value={customPresetName}
+                onChange={(e) => setCustomPresetName(e.target.value)}
+                placeholder="Enter preset name..."
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid var(--gray-300)',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  marginBottom: '20px',
+                }}
+                onKeyPress={(e) => e.key === 'Enter' && handleSaveAsPreset()}
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowSaveDialog(false)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '14px' }}
+                >
+                  <span>Cancel</span>
+                </button>
+                <button
+                  onClick={handleSaveAsPreset}
+                  className="btn btn-primary"
+                  disabled={!customPresetName.trim()}
+                  style={{ fontSize: '14px' }}
+                >
+                  <span>Save Preset</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       <style>{`
         .editor-section {
@@ -621,6 +864,7 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
           text-align: left;
           cursor: pointer;
           transition: background-color 0.2s;
+          color: var(--gray-800) !important;
         }
 
         .section-header:hover {
@@ -642,7 +886,7 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
           gap: 8px;
           font-size: 13px;
           font-weight: 500;
-          color: var(--gray-700);
+          color: var(--gray-800) !important;
           margin-bottom: 8px;
         }
 
@@ -665,11 +909,25 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
         .slider-control input[type="range"]::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 16px;
-          height: 16px;
+          width: 18px;
+          height: 18px;
           background: var(--primary);
           border-radius: 50%;
           cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .slider-control input[type="range"]::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          background: var(--primary);
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          -moz-appearance: none;
+          appearance: none;
         }
 
         .px-input {
@@ -683,7 +941,7 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
 
         .px-label {
           font-size: 12px;
-          color: var(--gray-500);
+          color: var(--gray-700) !important;
         }
 
         .font-select,
@@ -705,6 +963,7 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
+          color: var(--gray-800) !important;
         }
 
         .theme-preset:hover:not(:disabled) {
@@ -733,6 +992,7 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
           display: flex;
           align-items: center;
           justify-content: center;
+          color: var(--gray-700) !important;
         }
 
         .preview-mode-btn:hover {
@@ -757,6 +1017,22 @@ const ThemeEditor = ({ surveyId, onSave, onClose }: ThemeEditorProps) => {
           resize: vertical;
         }
       `}</style>
+    </div>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <div style={containerStyle}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+      >
+        {content}
+      </motion.div>
     </div>
   );
 };

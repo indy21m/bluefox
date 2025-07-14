@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Header, GlassCard, Button, Input } from '../components/common';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,18 +17,24 @@ const LoginPage = () => {
     
     if (success) {
       // Redirect to the page they were trying to access, or admin dashboard
-      const from = location.state?.from?.pathname || '/admin';
+      const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
   };
 
   return (
     <div className="min-h-screen">
-      <Header />
+      <header className="header">
+        <div className="container">
+          <div className="logo">
+            <span className="gradient-text text-2xl font-bold">🦊 BlueFox</span>
+          </div>
+        </div>
+      </header>
       
       <main className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)', padding: '20px' }}>
         <div style={{ width: '100%', maxWidth: '400px' }}>
-          <GlassCard>
+          <div className="glass-card">
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <h2 className="h2" style={{ marginBottom: '8px' }}>Admin Login</h2>
               <p className="text-gray-600">
@@ -38,24 +43,31 @@ const LoginPage = () => {
             </div>
 
             <form onSubmit={handleLogin}>
-              <Input
-                type="email"
-                label="Email Address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                error={error}
-                required
-              />
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email Address</label>
+                <input
+                  id="email"
+                  type="email"
+                  className="form-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
 
-              <Input
-                type="password"
-                label="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
+              <div className="form-group">
+                <label className="form-label" htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  className="form-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
 
               {error && (
                 <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: 'var(--error)', color: 'white', borderRadius: 'var(--radius-md)', fontSize: '14px' }}>
@@ -63,15 +75,15 @@ const LoginPage = () => {
                 </div>
               )}
 
-              <Button
+              <button
                 type="submit"
-                variant="primary"
-                loading={isLoading}
+                className={`btn btn-primary ${isLoading ? 'loading' : ''}`}
                 style={{ width: '100%', marginTop: '10px' }}
-                disabled={!email || !password}
+                disabled={!email || !password || isLoading}
               >
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Button>
+                {isLoading && <div className="loading-spinner"></div>}
+                <span>{isLoading ? 'Signing In...' : 'Sign In'}</span>
+              </button>
             </form>
 
             <div style={{ textAlign: 'center', marginTop: '20px' }}>
@@ -79,7 +91,7 @@ const LoginPage = () => {
                 Demo credentials: admin@bluefox.com / password
               </p>
             </div>
-          </GlassCard>
+          </div>
         </div>
       </main>
     </div>

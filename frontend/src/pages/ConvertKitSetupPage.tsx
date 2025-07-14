@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Header, Button, GlassCard, Input } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConvertKit } from '../contexts/ConvertKitContext';
@@ -107,33 +106,39 @@ const ConvertKitSetupPage = () => {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <div>Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading-spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full">
-      <Header 
-        rightContent={
-          <div className="flex items-center gap-md">
+    <div className="min-h-screen">
+      <header className="header">
+        <div className="container">
+          <div className="logo">
+            <span className="gradient-text text-2xl font-bold">🦊 BlueFox</span>
+          </div>
+          
+          <div className="flex items-center gap-lg">
             <span className="text-sm text-gray-600">
               Welcome, {user?.name || user?.email}
             </span>
-            <Button variant="secondary" size="sm" onClick={handleLogout}>
+            <button className="btn btn-secondary" onClick={handleLogout}>
               Logout
-            </Button>
+            </button>
           </div>
-        }
-      />
+        </div>
+      </header>
       
-      <main className="container" style={{ paddingTop: '40px', width: '100%' }}>
+      <main className="container" style={{ paddingTop: '40px', paddingBottom: '40px' }}>
         <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
             <h1 className="h1">ConvertKit Integration</h1>
-            <Link to="/admin">
-              <Button variant="secondary">← Back to Dashboard</Button>
+            <Link to="/integrations">
+              <button className="btn btn-secondary">
+                <span>← Back to Integrations</span>
+              </button>
             </Link>
           </div>
           <p className="text-lg text-gray-600">
@@ -141,20 +146,21 @@ const ConvertKitSetupPage = () => {
           </p>
         </div>
 
-        <div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
-          <GlassCard>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div className="glass-card">
             <h3 className="h3" style={{ marginBottom: '16px' }}>ConvertKit Configuration</h3>
             
-            <div style={{ marginBottom: '20px' }}>
-              <label className="form-label">ConvertKit API Key</label>
-              <Input
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label className="form-label" htmlFor="apiKey">ConvertKit API Key</label>
+              <input
+                id="apiKey"
                 type="password"
+                className="form-input"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Enter your ConvertKit API key..."
-                style={{ marginBottom: '12px' }}
               />
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600" style={{ marginTop: '8px' }}>
                 Find your API key in ConvertKit → Account Settings → Advanced → API
               </p>
             </div>
@@ -175,50 +181,48 @@ const ConvertKitSetupPage = () => {
             </div>
 
             <div className="flex gap-md" style={{ flexWrap: 'wrap', marginBottom: '30px' }}>
-              <Button 
-                variant="primary" 
+              <button 
+                className={`btn btn-primary ${isConnecting ? 'loading' : ''}`}
                 onClick={handleTestConnection}
-                loading={isConnecting}
-                disabled={!apiKey.trim()}
+                disabled={!apiKey.trim() || isConnecting}
               >
-                {isConnecting ? 'Testing...' : 'Test Connection'}
-              </Button>
-              <Button 
-                variant="success" 
+                {isConnecting && <div className="loading-spinner"></div>}
+                <span>{isConnecting ? 'Testing...' : 'Test Connection'}</span>
+              </button>
+              <button 
+                className="btn btn-success"
                 onClick={handleSaveSettings}
                 disabled={connectionStatus !== 'connected'}
               >
-                Save Settings
-              </Button>
+                <span>Save Settings</span>
+              </button>
             </div>
 
             {connectionStatus !== 'connected' && (
-              <div style={{ 
-                padding: '20px', 
-                backgroundColor: 'var(--gray-50)', 
-                borderRadius: '8px',
-                border: '1px solid var(--gray-200)' 
+              <div className="glass-card" style={{ 
+                background: 'rgba(248, 250, 252, 0.8)',
+                backdropFilter: 'none',
               }}>
                 <p className="font-medium" style={{ marginBottom: '16px' }}>
                   Connect your ConvertKit account to enable survey response segmentation
                 </p>
                 <div className="grid gap-sm">
-                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '6px', backgroundColor: 'white' }}>
+                  <div className="glass-card" style={{ padding: '12px' }}>
                     <div className="font-medium">✓ Automatic subscriber lookup</div>
                     <div className="text-sm text-gray-600">Find subscribers by email address</div>
                   </div>
-                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '6px', backgroundColor: 'white' }}>
+                  <div className="glass-card" style={{ padding: '12px' }}>
                     <div className="font-medium">✓ Custom field updates</div>
                     <div className="text-sm text-gray-600">Map survey answers to ConvertKit fields</div>
                   </div>
-                  <div style={{ padding: '12px', border: '1px solid var(--gray-200)', borderRadius: '6px', backgroundColor: 'white' }}>
+                  <div className="glass-card" style={{ padding: '12px' }}>
                     <div className="font-medium">✓ Real-time segmentation</div>
                     <div className="text-sm text-gray-600">Instant subscriber categorization</div>
                   </div>
                 </div>
               </div>
             )}
-          </GlassCard>
+          </div>
         </div>
       </main>
     </div>
