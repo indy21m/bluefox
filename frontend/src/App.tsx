@@ -11,6 +11,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SurveyEditorPage from './pages/SurveyEditorPage';
 import SurveyAnalyticsPage from './pages/SurveyAnalyticsPage';
 import ThemesPage from './pages/ThemesPage';
+import ClickDebug from './components/debug/ClickDebug';
 
 function App() {
   console.log('App component rendering');
@@ -21,6 +22,7 @@ function App() {
         <AuthProvider>
           <ConvertKitProvider>
             <Router>
+          <ClickDebug />
           <Routes>
           {/* Redirect root to admin dashboard */}
           <Route path="/" element={

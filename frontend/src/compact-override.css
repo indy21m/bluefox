@@ -295,3 +295,46 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
 }
+
+/* Fix for toast container blocking clicks */
+.toast-container {
+    pointer-events: none !important;
+}
+
+.toast-container > * {
+    pointer-events: auto !important;
+}
+
+/* Ensure buttons are clickable */
+button {
+    position: relative;
+    z-index: 1;
+}
+
+/* Fix for question cards */
+.question-card {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Ensure proper button click handling */
+.btn {
+    position: relative;
+    z-index: 10;
+    cursor: pointer;
+}
+
+/* Fix for overlapping elements */
+.glass-card {
+    position: relative;
+}
+
+/* Ensure navigation buttons work */
+.btn-secondary {
+    pointer-events: auto !important;
+}
+
+/* Debug helper for click issues */
+* {
+    -webkit-tap-highlight-color: transparent;
+}

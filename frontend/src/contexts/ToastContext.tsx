@@ -26,7 +26,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
     const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    
+    // Prevent duplicate toasts
+    setToasts((prev) => {
+      // Check if same message already exists
+      const exists = prev.some(t => t.message === message && t.type === type);
+      if (exists) return prev;
+      
+      // Limit to 3 toasts max
+      const newToasts = [...prev, { id, message, type }];
+      if (newToasts.length > 3) {
+        return newToasts.slice(-3);
+      }
+      return newToasts;
+    });
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -43,8 +56,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px'
+        gap: '10px',
+        pointerEvents: 'none'
       }}>
+        <style>{`
+          .toast-container > * {
+            pointer-events: auto;
+          }
+        `}</style>
         {toasts.map((toast, index) => (
           <Toast
             key={toast.id}

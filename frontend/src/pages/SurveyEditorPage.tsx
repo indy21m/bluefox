@@ -118,8 +118,6 @@ const SurveyEditorPage = () => {
       
       setSurvey(updatedSurvey);
       setSelectedQuestion(newQuestion);
-      showToast('Question added!', 'success');
-      
       // Auto-save after adding
       setTimeout(() => {
         localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(updatedSurvey));
@@ -503,7 +501,14 @@ const SurveyEditorPage = () => {
                 <div className="flex gap-sm" style={{ flexShrink: 0 }}>
                   <button 
                     className="btn btn-secondary"
-                    onClick={() => navigate(routes.surveys)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Back button clicked');
+                      navigate('/surveys');
+                    }}
+                    type="button"
+                    style={{ position: 'relative', zIndex: 10 }}
                   >
                     <span>← Back</span>
                   </button>
@@ -542,16 +547,28 @@ const SurveyEditorPage = () => {
                     onDragStart={() => handleQuestionDragStart(question.id)}
                     onDragOver={handleQuestionDragOver}
                     onDrop={() => handleQuestionDrop(question.id)}
-                    onClick={() => setSelectedQuestion(question)}
+                    onClick={(e) => {
+                      // Prevent click if clicking on child buttons
+                      const target = e.target as HTMLElement;
+                      if (target.tagName === 'BUTTON' || 
+                          target.closest('button')) {
+                        return;
+                      }
+                      console.log('Question clicked:', question.id, target.tagName, target.className);
+                      setSelectedQuestion(question);
+                    }}
+                    className="question-card"
                     style={{
                       padding: '12px',
                       border: `2px solid ${selectedQuestion?.id === question.id ? 'var(--primary-blue)' : 'var(--gray-200)'}`,
                       borderRadius: '8px',
-                      cursor: draggedQuestion ? 'grabbing' : 'grab',
+                      cursor: 'pointer',
                       background: draggedQuestion === question.id ? 'var(--primary-light)' : 
                                 selectedQuestion?.id === question.id ? 'var(--gray-50)' : 'transparent',
                       transition: 'all 0.2s',
-                      opacity: draggedQuestion === question.id ? 0.5 : 1
+                      opacity: draggedQuestion === question.id ? 0.5 : 1,
+                      userSelect: 'none',
+                      position: 'relative'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
