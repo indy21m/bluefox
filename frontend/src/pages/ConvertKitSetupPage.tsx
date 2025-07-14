@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../hooks/useToastCompat';
 import { useConvertKit } from '../contexts/ConvertKitContext';
 
 const ConvertKitSetupPage = () => {

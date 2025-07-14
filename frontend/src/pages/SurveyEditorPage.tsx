@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Header, GlassCard, Input } from '../components/common';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../hooks/useToastCompat';
 import { useConvertKit } from '../contexts/ConvertKitContext';
 import LogicBuilder from '../components/logic-builder/LogicBuilder';
 import ThemeEditor from '../components/theme-builder/ThemeEditor';

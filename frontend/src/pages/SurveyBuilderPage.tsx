@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../hooks/useToastCompat';
 import { FileText, Plus, Palette, Download, BarChart, Edit, Copy, Trash2 } from 'lucide-react';
 import type { Survey } from '../types';
 

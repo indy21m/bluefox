@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { ToastProvider } from './contexts/ToastContext';
 import { ConvertKitProvider } from './contexts/ConvertKitContext';
+import { ThemeProvider, ToastProvider } from './design-system';
 import { ProtectedRoute } from './components/auth';
 import { SurveyPage, AdminPage, LoginPage } from './pages';
 import SurveyBuilderPage from './pages/SurveyBuilderPage';
@@ -14,10 +14,11 @@ import ThemesPage from './pages/ThemesPage';
 
 function App() {
   return (
-    <AuthProvider>
+    <ThemeProvider>
       <ToastProvider>
-        <ConvertKitProvider>
-          <Router>
+        <AuthProvider>
+          <ConvertKitProvider>
+            <Router>
           <Routes>
           {/* Redirect root to admin dashboard */}
           <Route path="/" element={
@@ -100,10 +101,11 @@ function App() {
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
-        </ConvertKitProvider>
+            </Router>
+          </ConvertKitProvider>
+        </AuthProvider>
       </ToastProvider>
-    </AuthProvider>
+    </ThemeProvider>
   );
 }
 
