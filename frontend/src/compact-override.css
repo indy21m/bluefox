@@ -1,0 +1,297 @@
+/* Compact override styles for better space utilization and readability */
+
+/* Dashboard card text improvements */
+.glass-card h2 {
+    color: var(--gray-900) !important;
+    font-weight: 600;
+}
+
+.glass-card p {
+    color: var(--gray-700) !important;
+    font-weight: 400;
+}
+
+/* Dashboard specific card styling */
+.glass-card[style*="height: 100%"] {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+}
+
+.glass-card[style*="height: 100%"]:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Override glass-card for more compact design */
+.glass-card {
+    padding: 20px !important;
+}
+
+/* Survey cards specific styling */
+.survey-card {
+    padding: 18px !important;
+}
+
+/* Survey card title */
+.survey-card h3 {
+    font-size: 18px !important;
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+/* Survey card description */
+.survey-card .text-gray-600 {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    color: var(--gray-700) !important;
+}
+
+/* Progress section in survey cards */
+.survey-card .progress {
+    margin-top: 12px;
+}
+
+.survey-card .progress-header {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+/* CTA section styling */
+.survey-card .cta {
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+}
+
+/* Button adjustments for better fit */
+.survey-card .btn {
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+}
+
+/* Round buttons in survey cards */
+.survey-card .btn-round {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+}
+
+/* Badge adjustments */
+.survey-card .level-badge {
+    font-size: 12px !important;
+    padding: 4px 10px !important;
+}
+
+/* Main page heading adjustments */
+.h1 {
+    font-size: 32px !important;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Modern gradient text effect */
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+/* Dashboard specific overrides */
+@media (min-width: 768px) {
+    .grid-cols-1.md\\:grid-cols-3 .glass-card {
+        min-height: auto !important;
+    }
+}
+
+/* Improve text contrast */
+.text-gray-600 {
+    color: var(--gray-700) !important;
+}
+
+/* Dashboard subtitle styling */
+.container > div[style*="textAlign: 'center'"] p {
+    color: rgba(30, 41, 59, 0.8) !important;
+    font-size: 17px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.01em;
+}
+
+/* Survey builder page specific */
+.container > div:nth-child(2) h1 {
+    font-size: 28px !important;
+    margin-bottom: 8px !important;
+}
+
+.container > div:nth-child(2) p {
+    font-size: 16px !important;
+    color: var(--gray-700) !important;
+}
+
+/* ReactFlow container fix */
+.react-flow__renderer {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.react-flow__container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.react-flow__viewport {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.react-flow__pane {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Logic Builder specific styling */
+[class*="LogicBuilder"] > div:first-child,
+.logic-builder-container {
+    min-height: 600px !important;
+    background: var(--gray-50);
+}
+
+/* Ensure ReactFlow wrapper has proper dimensions */
+.logic-builder-wrapper .react-flow {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Fix for ReactFlow node rendering */
+.react-flow__node {
+    pointer-events: all !important;
+}
+
+.react-flow__handle {
+    pointer-events: all !important;
+}
+
+/* Empty state card */
+.glass-card[style*="padding: 60px 40px"] {
+    padding: 40px 30px !important;
+}
+
+.glass-card[style*="padding: 60px 40px"] h3 {
+    font-size: 20px !important;
+}
+
+.glass-card[style*="padding: 60px 40px"] p {
+    font-size: 15px !important;
+    color: var(--gray-700) !important;
+}
+
+/* Integrations page specific styling */
+.integration-card h3 {
+    color: var(--gray-900) !important;
+    font-weight: 600;
+}
+
+.integration-card p {
+    color: var(--gray-700) !important;
+    font-size: 15px !important;
+    line-height: 1.5;
+}
+
+.integration-card h4 {
+    color: var(--gray-800) !important;
+    font-weight: 600;
+}
+
+/* Status badges */
+.integration-card .level-badge {
+    background: var(--gray-100) !important;
+    color: var(--gray-700) !important;
+    font-weight: 500;
+}
+
+/* Integration cards hover effect */
+.integration-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.integration-card:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Bottom CTA card */
+.glass-card h2.h3 {
+    color: var(--gray-900) !important;
+    font-weight: 600;
+}
+
+/* Status text */
+.text-gray-500 {
+    color: var(--gray-600) !important;
+}
+
+/* Hide Survey Settings sections that appear outside the editor */
+/* Target survey settings by looking for common patterns */
+.survey-settings-modal,
+.survey-settings-container,
+[class*="survey-settings"],
+[id*="survey-settings"] {
+    display: none !important;
+}
+
+/* Keep survey settings visible only in the editor page */
+.survey-editor-page .survey-settings-modal,
+.survey-editor-page .survey-settings-container,
+.survey-editor-page [class*="survey-settings"],
+.survey-editor-page [id*="survey-settings"] {
+    display: block !important;
+}
+
+/* Hide specific survey settings based on content structure */
+.glass-card:has(input[type="checkbox"][id="showProgress"]),
+.modal-content:has(input[type="checkbox"][id="showProgress"]) {
+    display: none !important;
+}
+
+/* But keep them in editor */
+.survey-editor-page .glass-card:has(input[type="checkbox"][id="showProgress"]),
+.survey-editor-page .modal-content:has(input[type="checkbox"][id="showProgress"]) {
+    display: block !important;
+}
+
+/* Live pulse animation for real-time metrics */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.2);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Analytics page enhancements */
+.analytics-time-selector button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Chart container improvements */
+.recharts-wrapper {
+    border-radius: 8px;
+}
+
+/* Analytics card hover effects */
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}

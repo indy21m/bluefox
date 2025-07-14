@@ -1,0 +1,8 @@
+{
+  "name": "bluefox-api",
+  "version": "1.0.0",
+  "description": "BlueFox API Functions for Vercel",
+  "dependencies": {
+    "@vercel/node": "^3.0.0"
+  }
+}
