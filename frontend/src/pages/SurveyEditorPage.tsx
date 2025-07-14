@@ -17,6 +17,8 @@ const SurveyEditorPage = () => {
   const { showToast } = useToast();
   const { connectionStatus, customFields } = useConvertKit();
   
+  console.log('SurveyEditorPage render, surveyId:', surveyId);
+  
   const [survey, setSurvey] = useState<Survey>(demoSurvey);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,6 +28,7 @@ const SurveyEditorPage = () => {
   const [draggedQuestion, setDraggedQuestion] = useState<string | null>(null);
   const [draggedOption, setDraggedOption] = useState<string | null>(null);
   const [showThemeEditor, setShowThemeEditor] = useState(false);
+  const [updateKey, setUpdateKey] = useState(0);
 
   useEffect(() => {
     if (surveyId) {
@@ -97,6 +100,7 @@ const SurveyEditorPage = () => {
   };
 
   const handleAddQuestion = () => {
+    console.log('Add question clicked');
     try {
       const timestamp = Date.now();
       const newQuestion: Question = {
@@ -111,6 +115,8 @@ const SurveyEditorPage = () => {
         order: survey.questions.length + 1
       };
       
+      console.log('Creating new question:', newQuestion.id);
+      
       const updatedSurvey = {
         ...survey,
         questions: [...survey.questions, newQuestion]
@@ -118,10 +124,15 @@ const SurveyEditorPage = () => {
       
       setSurvey(updatedSurvey);
       setSelectedQuestion(newQuestion);
-      // Auto-save after adding
-      setTimeout(() => {
+      setUpdateKey(prev => prev + 1);
+      
+      // Immediate save
+      if (surveyId) {
         localStorage.setItem(`bluefox_survey_${surveyId}`, JSON.stringify(updatedSurvey));
-      }, 100);
+      }
+      
+      showToast('Question added successfully', 'success');
+      console.log('Question added, survey now has', updatedSurvey.questions.length, 'questions');
     } catch (error) {
       console.error('Error adding question:', error);
       showToast('Failed to add question', 'error');
@@ -289,13 +300,15 @@ const SurveyEditorPage = () => {
     }
     
     setIsSaving(true);
+    console.log('Saving survey:', surveyId);
+    
     try {
       // Save to localStorage
       const key = `bluefox_survey_${surveyId}`;
       localStorage.setItem(key, JSON.stringify(survey));
       
-      // Force a small delay to show the save animation
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Minimal delay for UI feedback
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       showToast('Survey saved successfully!', 'success');
       console.log('Survey saved:', surveyId);
@@ -504,8 +517,8 @@ const SurveyEditorPage = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('Back button clicked');
-                      navigate('/surveys');
+                      console.log('Back button clicked - navigating to /surveys');
+                      window.location.href = '/surveys';
                     }}
                     type="button"
                     style={{ position: 'relative', zIndex: 10 }}
@@ -537,7 +550,7 @@ const SurveyEditorPage = () => {
                 </div>
               </div>
               
-              <div className="grid gap-sm">
+              <div className="grid gap-sm" key={`questions-${survey.questions.length}-${selectedQuestion?.id}`}>
                 {survey.questions
                   .sort((a, b) => a.order - b.order)
                   .map((question, index) => (
@@ -555,7 +568,10 @@ const SurveyEditorPage = () => {
                         return;
                       }
                       console.log('Question clicked:', question.id, target.tagName, target.className);
+                      console.log('Current selected:', selectedQuestion?.id, 'New selected:', question.id);
                       setSelectedQuestion(question);
+                      // Force update
+                      setUpdateKey(prev => prev + 1);
                     }}
                     className="question-card"
                     style={{
@@ -635,7 +651,7 @@ const SurveyEditorPage = () => {
           </div>
 
           {/* Question Editor */}
-          <div style={{ gridColumn: 'span 2' }}>
+          <div style={{ gridColumn: 'span 2' }} key={`editor-${selectedQuestion?.id}-${updateKey}`}>
             {selectedQuestion ? (
               <GlassCard>
 
